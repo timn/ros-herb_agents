@@ -1,0 +1,14 @@
+<package>
+  <description brief="herb_agents">
+   Agent scripts for HERB.
+  </description>
+  <author>Tim Niemueller</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/herb_agents</url>
+  <depend package="roslua"/>
+  <depend package="actionlib_lua"/>
+  <depend package="lua_utils"/>
+  <depend package="fawkes_lua"/>
+  <depend package="skiller"/>
+</package>
