@@ -24,7 +24,7 @@ module(..., agentenv.module_init)
 
 -- Crucial skill information
 name               = "IOH2010"
-fsm                = AgentHSM:new{name=name, debug=true, start="START"}
+fsm                = AgentHSM:new{name=name, debug=true, start="START", recover_state="RECOVER"}
 depends_skills     = {"grab", "lockenv", "releasenv", "pickup"}
 
 documentation      = [==[Intel Open House 2010.
@@ -36,21 +36,25 @@ agentenv.agent_module(...)
 -- Setup FSM
 fsm:define_states{ export_to=_M,
    {"START", JumpState},
-   {"LOCK", AgentSkillExecJumpState, skills={{"lockenv"}}},
-   {"GRAB", AgentSkillExecJumpState, skills={{"grab"}}},
-   {"PICKUP", AgentSkillExecJumpState, skills={{"pickup"}}},
-   {"RELEASE", AgentSkillExecJumpState, skills={{"releaseenv"}}},
+   {"RECOVER", JumpState},
+   {"LOCK", AgentSkillExecJumpState, skills={{"lockenv"}},
+    final_state="GRAB", failure_state="RECOVER"},
+   {"GRAB", AgentSkillExecJumpState, final_state="PICKUP", failure_state="RECOVER",
+    skills={{"grab", side="left", object_id="poptarts"},{"noop", side="right"}}},
+   {"PICKUP", AgentSkillExecJumpState, final_state="RELEASE", failure_state="RECOVER",
+    skills={{"pickup", side="left"}, {"noop", side="right"}}},
+   {"RELEASE", AgentSkillExecJumpState, skills={{"releaseenv"}},
+    final_state="DONE", failure_state="RECOVER"},
    {"DONE", JumpState},
-   {"FAILED", JumpState}
 }
 
 fsm:add_transitions{
-   {"LOCK", "GRAB", AgentSkillExecJumpState.final},
-   {"LOCK", "FAILED", AgentSkillExecJumpState.failed},
-   {"GRAB", "PICKUP", AgentSkillExecJumpState.final},
-   {"GRAB", "FAILED", AgentSkillExecJumpState.failed},
-   {"PICKUP", "RELEASE", AgentSkillExecJumpState.final},
-   {"PICKUP", "FAILED", AgentSkillExecJumpState.failed},
-   {"RELEASE", "DONE", AgentSkillExecJumpState.final},
-   {"RELEASE", "FAILED", AgentSkillExecJumpState.failed}
+   {"START", "LOCK", true},
+   {"RECOVER", "START", timeout=10}
 }
+
+function RECOVER:init()
+   if self.fsm.error and self.fsm.error ~= "" then
+      print_warn("Error: %s", self.fsm.error)
+   end
+end
