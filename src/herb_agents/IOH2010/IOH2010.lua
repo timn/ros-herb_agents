@@ -1,6 +1,6 @@
 
 ----------------------------------------------------------------------------
---  init.lua - Intel Open House 2010 Agent
+--  IOH2010.lua - Intel Open House 2010 Agent
 --
 --  Created: Mon Sep 06 14:11:54 2010
 --  Copyright  2010  Tim Niemueller [www.niemueller.de]
@@ -26,6 +26,9 @@ module(..., agentenv.module_init)
 name               = "IOH2010"
 fsm                = AgentHSM:new{name=name, debug=true, start="START", recover_state="RECOVER"}
 depends_skills     = {"grab", "lockenv", "releasenv", "pickup"}
+depends_topics     = {
+   { v="doorbell", name="/callbutton", type="std_msgs/Byte" }
+}
 
 documentation      = [==[Intel Open House 2010.
 ]==]
@@ -35,6 +38,7 @@ agentenv.agent_module(...)
 
 -- Setup FSM
 fsm:define_states{ export_to=_M,
+   closure={doorbell=doorbell},
    {"START", JumpState},
    {"RECOVER", JumpState},
    {"LOCK", AgentSkillExecJumpState, skills={{"lockenv"}},
@@ -49,7 +53,7 @@ fsm:define_states{ export_to=_M,
 }
 
 fsm:add_transitions{
-   {"START", "LOCK", true},
+   {"START", "LOCK", "#doorbell.messages > 0"},
    {"RECOVER", "START", timeout=10}
 }
 
