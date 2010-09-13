@@ -27,8 +27,9 @@ name               = "IOH2010"
 fsm                = AgentHSM:new{name=name, debug=true, start="START", recover_state="RECOVER"}
 depends_skills     = {"grab", "lockenv", "releasenv", "pickup", "handoff", "turn"}
 depends_topics     = {
-   { v="doorbell", name="/callbutton",            type="std_msgs/Byte" },
-   { v="objects",  name="/manipulation/obj_list", type="manipulationapplet/ObjectActions", latching=true }
+   { v="doorbell", name="/callbutton",              type="std_msgs/Byte" },
+   { v="objects",  name="/manipulation/obj_list",   type="manipulationapplet/ObjectActions", latching=true },
+   { v="envlock",  name="/manipulation/env/locked", type="std_msgs/Bool", latching=true },
 }
 
 documentation      = [==[Intel Open House 2010.
@@ -41,34 +42,44 @@ local utils = require("herb_agents.utils")
 
 -- Setup FSM
 fsm:define_states{ export_to=_M,
-   closure={doorbell=doorbell},
+   closure={doorbell=doorbell, envlock=envlock},
    {"START", JumpState},
    {"RECOVER", JumpState},
+   {"RECOVER_RELEASE", AgentSkillExecJumpState, skills={{"releaseenv"}, {"goinitial"}}, final_state="RECOVER", failure_state="RECOVER"},
    {"WAIT_OBJECT", JumpState},
    {"LOCK", AgentSkillExecJumpState, skills={{"lockenv"}}, final_state="GRAB", failure_state="RECOVER"},
    {"GRAB", AgentSkillExecJumpState, final_state="PICKUP", failure_state="RECOVER", skills={{"grab"}}},
    {"PICKUP", AgentSkillExecJumpState, final_state="RELEASE", failure_state="RECOVER", skills={{"pickup"}}},
-   {"RELEASE", AgentSkillExecJumpState, skills={{"releaseenv"}}, final_state="HANDOFF", failure_state="RECOVER"},
-   {"HANDOFF", AgentSkillExecJumpState, skills={{"handoff"}}, final_state="START", failure_state="RECOVER"},
-   --{"TURN_RECYCLE", AgentSkillExecJumpState, skills={{"turn", angle_rad=math.pi}},
-   -- final_state="PUT_RECYCLE", failure_state="RECOVER"},
-   --{"PUT_RECYCLE", AgentSkillExecJumpState, skills={{"put", object_id={"recycle_bin"}}},
-   -- final_state="PUT_RECYCLE", failure_state="RECOVER"},
+   {"RELEASE", AgentSkillExecJumpState, skills={{"releaseenv"}}, final_state="TURN", failure_state="RECOVER"},
+   --{"HANDOFF", AgentSkillExecJumpState, skills={{"handoff"}}, final_state="TURN_BACK", failure_state="RECOVER"},
+   {"TURN", AgentSkillExecJumpState, skills={{"turn", angle_rad=-math.pi/2.}},
+    final_state="PUT_RECYCLE", failure_state="RECOVER"},
+   {"PUT_RECYCLE", AgentSkillExecJumpState, skills={{"put"}}, final_state="GOINITIAL", failure_state="RECOVER"},
+   {"GOINITIAL", AgentSkillExecJumpState, skills={{"goinitial"}}, final_state="TURN_BACK", failure_state="RECOVER"},
+   {"TURN_BACK", AgentSkillExecJumpState, skills={{"turn", angle_rad=math.pi/2.}},
+    final_state="START", failure_state="RECOVER"},
 }
 
 fsm:add_transitions{
    {"START", "WAIT_OBJECT", "#doorbell.messages > 0"},
    {"WAIT_OBJECT", "LOCK", "vars.found_object"},
    {"WAIT_OBJECT", "RECOVER", timeout=10},
-   {"RECOVER", "START", timeout=10}
+   {"RECOVER", "START", timeout=5},
+   {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
 }
+
+function START:init()
+   self.fsm:reset_trace()
+   for k,_ in pairs(self.fsm.vars) do
+      self.fsm.vars[k] = nil
+   end
+end
 
 function WAIT_OBJECT:loop()
    if #objects.messages > 0 then
-      print("Got a message")
       local m = objects.messages[#objects.messages] -- only check most recent
       for i,o in ipairs(m.values.object_id) do
-         printf("Comparing %s / %s / %s", o, m.values.poss_act[i], m.values.side[i])
+         --printf("Comparing %s / %s / %s", o, m.values.poss_act[i], m.values.side[i])
          if o:match("fuze_bottle[%d]*") and m.values.poss_act[i] == "grab" then
             self.fsm.vars.side         = m.values.side[i]
             self.fsm.vars.object_id    = o
@@ -82,11 +93,20 @@ end
 function GRAB:init()
    self.skills[1].args = {side=self.fsm.vars.side, object_id=self.fsm.vars.object_id}
 end
-PICKUP.init  = GRAB.init
-HANDOFF.init = GRAB.init
+PICKUP.init    = GRAB.init
+GOINITIAL.init = GRAB.init
+--HANDOFF.init = GRAB.init
+
+function PUT_RECYCLE:init()
+   self.skills[1].args = {side=self.fsm.vars.side, object_id="recyclingbin2"}
+end
 
 function RECOVER:init()
    if self.fsm.error and self.fsm.error ~= "" then
       print_warn("Error: %s", self.fsm.error)
    end
+end
+
+function RECOVER_RELEASE:init()
+   self.skills[2].args = {side=self.fsm.vars.side}
 end
