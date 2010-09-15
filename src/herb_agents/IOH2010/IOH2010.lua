@@ -47,11 +47,7 @@ fsm:define_states{ export_to=_M,
    {"RECOVER", JumpState},
    {"RECOVER_RELEASE", AgentSkillExecJumpState, skills={{"releaseenv"}, {"goinitial"}}, final_state="RECOVER", failure_state="RECOVER"},
    {"WAIT_OBJECT", JumpState},
-   {"LOCK", AgentSkillExecJumpState, skills={{"lockenv"}}, final_state="GRAB", failure_state="RECOVER"},
-   {"GRAB", AgentSkillExecJumpState, final_state="PICKUP", failure_state="RECOVER", skills={{"grab"}}},
-   {"PICKUP", AgentSkillExecJumpState, final_state="RELEASE", failure_state="RECOVER", skills={{"pickup"}}},
-   {"RELEASE", AgentSkillExecJumpState, skills={{"releaseenv"}}, final_state="TURN", failure_state="RECOVER"},
-   --{"HANDOFF", AgentSkillExecJumpState, skills={{"handoff"}}, final_state="TURN_BACK", failure_state="RECOVER"},
+   {"GRAB", AgentSkillExecJumpState, final_state="TURN", failure_state="RECOVER", skills={{"grab_object"}}},
    {"TURN", AgentSkillExecJumpState, skills={{"turn", angle_rad=-math.pi/2.}},
     final_state="PUT_RECYCLE", failure_state="RECOVER"},
    {"PUT_RECYCLE", AgentSkillExecJumpState, skills={{"put"}}, final_state="GOINITIAL", failure_state="RECOVER"},
@@ -62,7 +58,7 @@ fsm:define_states{ export_to=_M,
 
 fsm:add_transitions{
    {"START", "WAIT_OBJECT", "#doorbell.messages > 0"},
-   {"WAIT_OBJECT", "LOCK", "vars.found_object"},
+   {"WAIT_OBJECT", "GRAB", "vars.found_object"},
    {"WAIT_OBJECT", "RECOVER", timeout=10},
    {"RECOVER", "START", timeout=5},
    {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
@@ -93,7 +89,6 @@ end
 function GRAB:init()
    self.skills[1].args = {side=self.fsm.vars.side, object_id=self.fsm.vars.object_id}
 end
-PICKUP.init    = GRAB.init
 GOINITIAL.init = GRAB.init
 --HANDOFF.init = GRAB.init
 
