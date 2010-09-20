@@ -38,6 +38,9 @@ documentation      = [==[Intel Open House 2010.
 -- Initialize as agent module
 agentenv.agent_module(...)
 
+local HOME_POS = "counter1"
+
+local Skill = AgentSkillExecJumpState
 local utils = require("herb_agents.utils")
 
 -- Setup FSM
@@ -45,29 +48,23 @@ fsm:define_states{ export_to=_M,
    closure={doorbell=doorbell, envlock=envlock},
    {"START", JumpState},
    {"RECOVER", JumpState},
-   {"RECOVER_RELEASE", AgentSkillExecJumpState, skills={{"releaseenv"}, {"goinitial"}},
+   {"RECOVER_RELEASE", Skill, skills={{"releaseenv"}, {"goinitial"}},
       final_state="RECOVER", failure_state="RECOVER"},
-   {"GOTO_COUNTER1", AgentSkillExecJumpState,
-      skills={{"goto", place="counter1"}, {"say", text="Going to counter 1"}},
+   {"RECOVER_GOHOME", Skill, skills={{"goto", place=HOME_POS}},
+      final_state="RECOVER", failure_state="RECOVER"},
+   {"GOTO_COUNTER1", Skill, skills={{"goto", place="counter1"}, {"say", text="Going to counter 1"}},
       final_state="WAIT_OBJECT", failure_state="RECOVER"},
    {"WAIT_OBJECT", JumpState},
-   {"GRAB", AgentSkillExecJumpState, final_state="GOTO_STATION1", failure_state="RECOVER",
+   {"GRAB", Skill, final_state="GOTO_STATION1", failure_state="RECOVER",
       skills={{"grab_object"}}},
-   {"GOTO_STATION1", AgentSkillExecJumpState,
-      skills={{"goto", place="station1"}, {"say", text="Going to recycling bin"}},
+   {"GOTO_STATION1", Skill, skills={{"goto", place="station1"}, {"say", text="Going to recycling bin"}},
       final_state="PUT_RECYCLE", failure_state="RECOVER"},
-   --{"TURN", AgentSkillExecJumpState, skills={{"turn", angle_rad=-math.pi/2.}},
-   -- final_state="PUT_RECYCLE", failure_state="RECOVER"},
-   {"PUT_RECYCLE", AgentSkillExecJumpState,
-      skills={{"put"}, {"say", text="Saving the world, one bottle at a time"}},
+   {"PUT_RECYCLE", Skill, skills={{"put"}, {"say", text="Saving the world, one bottle at a time"}},
       final_state="GOINITIAL", failure_state="RECOVER"},
-   {"GOINITIAL", AgentSkillExecJumpState, skills={{"goinitial"}},
+   {"GOINITIAL", Skill, skills={{"goinitial"}},
       final_state="GOTO_COUNTER2", failure_state="RECOVER"},
-   {"GOTO_COUNTER2", AgentSkillExecJumpState,
-      skills={{"goto", place="counter2"}, {"say", text="Going to home position"}},
+   {"GOTO_COUNTER2", Skill, skills={{"goto", place="counter2"}, {"say", text="Going to home position"}},
       final_state="START", failure_state="RECOVER"},
-   --{"TURN_BACK", AgentSkillExecJumpState, skills={{"turn", angle_rad=math.pi/2.}},
-   -- final_state="START", failure_state="RECOVER"},
 }
 
 fsm:add_transitions{
