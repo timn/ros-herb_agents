@@ -53,24 +53,50 @@ fsm:define_states{ export_to=_M,
    {"RECOVER_GOHOME", Skill, skills={{"goto", place=HOME_POS}},
       final_state="RECOVER", failure_state="RECOVER"},
    {"GOTO_COUNTER1", Skill, skills={{"goto", place="counter1"}, {"say", text="Going to counter 1"}},
-      final_state="WAIT_OBJECT", failure_state="RECOVER"},
-   {"WAIT_OBJECT", JumpState},
-   {"GRAB", Skill, final_state="GOTO_STATION1", failure_state="RECOVER",
-      skills={{"grab_object"}}},
+   --   final_state="WAIT_OBJECT", failure_state="RECOVER"},
+      final_state="GOTO_STATION1", failure_state="RECOVER"},
+   --{"WAIT_OBJECT", JumpState},
+   --{"GRAB", Skill, final_state="GOTO_STATION1", failure_state="RECOVER",
+   --   skills={{"grab_object"}}},
    {"GOTO_STATION1", Skill, skills={{"goto", place="station1"}, {"say", text="Going to recycling bin"}},
-      final_state="PUT_RECYCLE", failure_state="RECOVER"},
-   {"PUT_RECYCLE", Skill, skills={{"put"}, {"say", text="Saving the world, one bottle at a time"}},
-      final_state="GOINITIAL", failure_state="RECOVER"},
-   {"GOINITIAL", Skill, skills={{"goinitial"}},
+      --final_state="HANDOFF", failure_state="RECOVER"},
+      final_state="TURN_LEFT_STATION1", failure_state="RECOVER"},
+   --{"HANDOFF", Skill, skills={{"handoff"}, {"say", text="Here is the drink, please take it!"}},
+   --   final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1"},
+   --{"RETRACT_ARM_HANDOFF", Skill, skills={{"goinitial"}},
+   --   final_state="TAKE", failure_state="RECOVER"},
+   {"TURN_LEFT_STATION1", Skill, skills={{"turn", angle_rad=math.pi/2.}},
+      --final_state="PUT_TABLE", failure_state="RECOVER"},
+      final_state="TURN_RIGHT_STATION1", failure_state="RECOVER"},
+   --{"PUT_TABLE", Skill, skills={{"put"}, {"say", text="Placing bottle on table."}},
+   --   final_state="RETRACT_ARM_STATION1", failure_state="RECOVER"},
+   --{"RETRACT_ARM_STATION1", Skill, skills={{"goinitial"}},
+   --   final_state="TURN_RIGHT_STATION1", failure_state="RECOVER"},
+   {"TURN_RIGHT_STATION1", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
+      --final_state="TAKE", failure_state="RECOVER"},
       final_state="GOTO_COUNTER2", failure_state="RECOVER"},
-   {"GOTO_COUNTER2", Skill, skills={{"goto", place="counter2"}, {"say", text="Going to home position"}},
+   --{"TAKE", Skill, skills={{"take"}, {"say", text="Please give me a bottle to take back."}},
+   --   final_state="GOTO_COUNTER2", failure_state="GOTO_COUNTER2_EMPTY"},
+   {"GOTO_COUNTER2", Skill, skills={{"goto", place="counter2"}, {"say", text="Going to home position."}},
+      final_state="TURN_RIGHT_COUNTER2", failure_state="RECOVER"},
+   --{"GOTO_COUNTER2_EMPTY", Skill,
+   --   skills={{"goto", place="counter2"}, {"say", text="Going to home position without a bottle."}},
+   --   final_state="START", failure_state="RECOVER"},
+   {"TURN_RIGHT_COUNTER2", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
+      --final_state="PUT_RECYCLE", failure_state="RECOVER"},
+      final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
+   --{"PUT_RECYCLE", Skill, skills={{"put"}, {"say", text="Saving the world, one bottle at a time"}},
+   --   final_state="RETRACT_ARM_COUNTER2", failure_state="RECOVER"},
+   --{"RETRACT_ARM_COUNTER2", Skill, skills={{"goinitial"}},
+   --   final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
+   {"TURN_LEFT_COUNTER2", Skill, skills={{"turn", angle_rad=math.pi/2.}},
       final_state="START", failure_state="RECOVER"},
 }
 
 fsm:add_transitions{
    {"START", "GOTO_COUNTER1", "#doorbell.messages > 0"},
-   {"WAIT_OBJECT", "GRAB", "vars.found_object"},
-   {"WAIT_OBJECT", "RECOVER", timeout=10},
+   --{"WAIT_OBJECT", "GRAB", "vars.found_object"},
+   --{"WAIT_OBJECT", "RECOVER", timeout=10},
    {"RECOVER", "START", timeout=5},
    {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
 }
@@ -82,6 +108,7 @@ function START:init()
    end
 end
 
+--[[
 function WAIT_OBJECT:loop()
    if #objects.messages > 0 then
       local m = objects.messages[#objects.messages] -- only check most recent
@@ -100,12 +127,17 @@ end
 function GRAB:init()
    self.skills[1].args = {side=self.fsm.vars.side, object_id=self.fsm.vars.object_id}
 end
-GOINITIAL.init = GRAB.init
---HANDOFF.init = GRAB.init
+RETRACT_ARM_STATION1.init = GRAB.init
+RETRACT_ARM_COUNTER2.init = GRAB.init
+
+function HANDOFF:init()
+   self.skills[1].args = {side=self.fsm.vars.side, exec_timelimit=10}
+end
 
 function PUT_RECYCLE:init()
-   self.skills[1].args = {side=self.fsm.vars.side, object_id="recyclingbin"}
+   self.skills[1].args = {side=self.fsm.vars.side, object_id="recyclingbin2"}
 end
+--]]
 
 function RECOVER:init()
    if self.fsm.error and self.fsm.error ~= "" then
