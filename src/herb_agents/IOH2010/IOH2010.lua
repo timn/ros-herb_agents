@@ -25,7 +25,7 @@ module(..., agentenv.module_init)
 -- Crucial skill information
 name               = "IOH2010"
 fsm                = AgentHSM:new{name=name, debug=true, start="START", recover_state="RECOVER"}
-depends_skills     = {"grab", "lockenv", "releasenv", "pickup", "handoff", "turn"}
+depends_skills     = {"grab", "lockenv", "releasenv", "pickup", "handoff", "turn", "take"}
 depends_topics     = {
    { v="doorbell", name="/callbutton",               type="std_msgs/Byte" },
    { v="objects",  name="/manipulation/obj_list",    type="manipulationapplet/ObjectActions", latching=true },
@@ -154,9 +154,11 @@ function DECIDE_WEIGHT:loop()
 end
 
 function GRAB:init()
+   print_warn("Setting side for %s", self.name)
    self.skills[1].args = {side=self.fsm.vars.side, object_id=self.fsm.vars.object_id}
 end
 RETRACT_ARM_STATION1.init = GRAB.init
+RETRACT_ARM_HANDOFF.init = GRAB.init
 RETRACT_ARM_COUNTER2.init = GRAB.init
 
 function HANDOFF:init()
