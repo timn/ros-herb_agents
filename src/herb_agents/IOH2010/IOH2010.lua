@@ -53,14 +53,16 @@ fsm:define_states{ export_to=_M,
    {"RECOVER", JumpState},
    {"RECOVER_RELEASE", Skill, skills={{"releaseenv"}, {"goinitial"}},
       final_state="RECOVER", failure_state="RECOVER"},
-   {"RECOVER_GOHOME", Skill, skills={{"goto", place=HOME_POS}},
-      final_state="RECOVER", failure_state="RECOVER"},
    {"GOTO_COUNTER1", Skill, skills={{"goto", place="counter1"}, {"say", text="Going to counter 1"}},
-      final_state="WAIT_OBJECT", failure_state="RECOVER"},
+      final_state="WAIT_OBJECT", failure_state="GOTO_COUNTER1"},
       --final_state="GOTO_STATION1", failure_state="RECOVER"},
    {"WAIT_OBJECT", JumpState},
-   {"GRAB", Skill, final_state="GOTO_STATION1", failure_state="RECOVER",
+   {"OBJECT_NOT_VISIBLE", Skill, skills={{"say", text="I cannot see the object, please help."}},
+      final_state="WAIT_OBJECT", failure_state="WAIT_OBJECT"},
+   {"GRAB", Skill, final_state="GOTO_STATION1", failure_state="GRAB_TRYAGAIN",
       skills={{"grab_object"}}},
+   {"GRAB_TRYAGAIN", Skill, final_state="WAIT_OBJECT", failure_state="WAIT_OBJECT",
+      skills={{"say", text="Oops, grasping failed, trying again."}}},
    {"GOTO_STATION1", Skill, skills={{"goto", place="station1"}, {"say", text="Going to recycling bin"}},
       final_state="HANDOFF", failure_state="RECOVER"},
       --final_state="TURN_LEFT_STATION1_PLACE", failure_state="RECOVER"},
@@ -116,7 +118,7 @@ fsm:define_states{ export_to=_M,
 fsm:add_transitions{
    {"START", QUICKJUMP or "GOTO_COUNTER1", "#doorbell.messages > 0"},
    {"WAIT_OBJECT", "GRAB", "vars.found_object"},
-   {"WAIT_OBJECT", "RECOVER", timeout=10},
+   {"WAIT_OBJECT", "OBJECT_NOT_VISIBLE", timeout=20},
    --{"WAIT_OBJECTS_STATION1", "GRAB_STATION1", "vars.found_objects"},
    --{"WAIT_OBJECTS_STATION1", "RECOVER", timeout=10},
    {"DECIDE_WEIGHT", "UNKNOWN_WEIGHT", "vars.weight ~= nil and vars.weight == -1"},
@@ -131,6 +133,10 @@ function START:init()
    for k,_ in pairs(self.fsm.vars) do
       self.fsm.vars[k] = nil
    end
+end
+
+function WAIT_OBJECT:init()
+   self.fsm.vars.found_object = false
 end
 
 function WAIT_OBJECT:loop()
