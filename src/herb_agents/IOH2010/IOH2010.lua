@@ -46,6 +46,17 @@ local FIXED_SIDE = "right"
 local Skill = AgentSkillExecJumpState
 local utils = require("herb_agents.utils")
 
+
+TEXT_DRIVING_COUNTER1 = {"Driving to the counter.","Going to the counter.","Lets see what we have at the counter."}
+TEXT_DRIVING_RECYCLINGBIN = {"Driving to the recycling bin.","Going to the recycling bin.","I'm going to recycle this."}
+TEXT_GIVEDRINK = {"Here is your drink, please take it.","Here you are, please take the drink."}
+TEXT_PLACE = {"Let me put this down.","Let me put this on the table."}
+TEXT_GIVEME = {"Please give me an empty bottle."}
+TEXT_HOME = {"Going to home position."}
+TEXT_WEIGHT = {"I wonder how much this weighs.","Let me check how much this weighs."}
+TEXT_UNKOWNWEIGHT = {"I'm not sure how much this weighs, but I think it's empty"}
+TEXT_PUTRECYCLE = {"Saving the world, one bottle at a time.","That is the most satisfying part of my job"}
+
 -- Setup FSM
 fsm:define_states{ export_to=_M,
    closure={doorbell=doorbell, envlock=envlock},

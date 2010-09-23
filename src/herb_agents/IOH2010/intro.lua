@@ -41,19 +41,19 @@ local utils = require("herb_agents.utils")
 local Skill = AgentSkillExecJumpState
 
 -- text constants for better readability of HSM
-TEXT_GREET="Hello visitors. I am HERB, the home exploring robot butler. "..
-   "During this short demonstration, I will show you my most important "..
-   "technical features."
-TEXT_ARM="I have two robotics arm, with 7 degrees of freedom each. Planning "..
-   "my motions is tough work, but I am quite good at it."
-TEXT_HAND="This are my fine hands."
-TEXT_3DLASER="I use a 3D laser to perceive the environment while grasping objects."
-TEXT_PROSILICA="With this camera I look at objects."
-TEXT_OBLASER="The obstacle laser helps me to avoid obstacles while driving."
-TEXT_GUTS="Mz computing power comes from 3 Laptops"
-TEXT_SEGWAY="I use a wheeled segwaz base to move around in the house."
-TEXT_MOVEMENT="I can be quite speedy. But usually I am not because humans stand in my way."
-TEXT_GOODBYE="This was my introductory presentation. Come back later to see me serve drinks. Goodbye."
+TEXT_GREET="Hello, I am HERB, the home exploring robot buttler. "..
+   "Let me tell you a little about myself."
+TEXT_ARM="I have two arms with seven degrees of freedom each. Planning "..
+   "my motion is tough work, but I am quite good at it."
+TEXT_HAND="These are my four degree of freedom hands."
+TEXT_3DLASER="I use a 3D laser to perceive the environment and avoid unknown objects."
+TEXT_PROSILICA="I recognize known objects with this camera."
+TEXT_OBLASER="This laser scannar helps me to avoid, obstacles while driving."
+TEXT_GUTS="I have three, intel processors for motion planning, and vision"
+TEXT_SEGWAY="I use a segway base to move around the house."
+TEXT_MOVEMENT="I can drive quite fast, but I usually don't, because it might scare you."
+TEXT_GOODBYE="Now let me dazzle you, with my ability to serve drinks."
+
 
 -- Setup FSM
 fsm:define_states{ export_to=_M,
