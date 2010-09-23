@@ -25,7 +25,7 @@ module(..., agentenv.module_init)
 -- Crucial skill information
 name               = "IOH2010"
 fsm                = AgentHSM:new{name=name, debug=true, start="START", recover_state="RECOVER"}
-depends_skills     = {"grab", "lockenv", "releasenv", "pickup", "handoff", "turn", "take"}
+depends_skills     = {"grab", "lockenv", "releasenv", "pickup", "handoff", "turn", "take", "give"}
 depends_topics     = {
    { v="doorbell", name="/callbutton",               type="std_msgs/Byte" },
    { v="objects",  name="/manipulation/obj_list",    type="manipulationapplet/ObjectActions", latching=true },
@@ -40,7 +40,7 @@ documentation      = [==[Intel Open House 2010.
 agentenv.agent_module(...)
 
 local HOME_POS = "counter1"
-local QUICKJUMP = "WEIGH"
+--local QUICKJUMP = "WEIGH"
 local FIXED_SIDE = "right"
 
 local Skill = AgentSkillExecJumpState
@@ -66,7 +66,7 @@ fsm:define_states{ export_to=_M,
    {"GOTO_STATION1", Skill, skills={{"goto", place="station1"}, {"say", text="Going to recycling bin"}},
       final_state="HANDOFF", failure_state="RECOVER"},
       --final_state="TURN_LEFT_STATION1_PLACE", failure_state="RECOVER"},
-   {"HANDOFF", Skill, skills={{"handoff"}, {"say", text="Here is the drink, please take it!"}},
+   {"HANDOFF", Skill, skills={{"give"}, {"say", text="Here is the drink, please take it!"}},
       --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
       final_state="RETRACT_ARM_HANDOFF", failure_state="RETRACT_ARM_HANDOFF"},
    {"RETRACT_ARM_HANDOFF", Skill, skills={{"goinitial"}},
@@ -92,25 +92,26 @@ fsm:define_states{ export_to=_M,
    --{"TURN_LEFT_STATION1_POST_GRAB", Skill, skills={{"turn", angle_rad=math.pi/2.}},
    --   final_state="GOTO_COUNTER2", failure_state="RECOVER"},
    {"GOTO_COUNTER2", Skill, skills={{"goto", place="counter2"}, {"say", text="Going to home position."}},
+      final_state="TURN_RIGHT_COUNTER2", failure_state="RECOVER"},
+   {"TURN_RIGHT_COUNTER2", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
       final_state="WEIGH", failure_state="RECOVER"},
+      --final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
    {"WEIGH", Skill, skills={{"weigh"}, {"say", text="Weighing the object."}},
       final_state="DECIDE_WEIGHT", failure_state="UNKNOWN_WEIGHT"},
    {"DECIDE_WEIGHT", JumpState},
    {"UNKNOWN_WEIGHT", Skill, skills={{"say", text="Cannot determine weight, assuming empty bottle"}},
-      final_state="TURN_RIGHT_COUNTER2_PRE_PUT", failure_state="RECOVER"},
-   {"TURN_RIGHT_COUNTER2_PRE_PUT", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
       final_state="PUT_RECYCLE", failure_state="RECOVER"},
-      --final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
-   {"PUT_RECYCLE", Skill, skills={{"put"}, {"say", text="Saving the world, one bottle at a time"}},
+   {"PUT_RECYCLE", Skill,
+      skills={{"put"},
+              {"say", text="The bottle is empty, going to recycle. Saving the world, one bottle at a time"}},
       final_state="RETRACT_ARM_COUNTER2", failure_state="RECOVER"},
    {"RETRACT_ARM_COUNTER2", Skill, skills={{"goinitial"}},
       final_state="TURN_RIGHT_COUNTER2_POST", failure_state="RECOVER"},
-   -- ATTENTION: turning left atm for testing
-   {"TURN_RIGHT_COUNTER2_POST", Skill, skills={{"turn", angle_rad=math.pi/2.}},
+   {"TURN_RIGHT_COUNTER2_POST", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
       final_state="START", failure_state="RECOVER"},
    --{"PLACE_COUNTER2", Skill, skills={{"place"}, {"say", text="Saving the world, one bottle at a time"}},
    --   final_state="RETRACT_ARM_COUNTER2", failure_state="RECOVER"},
-   {"HANDOFF_FULL", Skill, skills={{"handoff"}, {"say", text="Full bottle, please take!"}},
+   {"HANDOFF_FULL", Skill, skills={{"give"}, {"say", text="Full bottle, please take!"}},
       --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
       final_state="START", failure_state="START"},
 }
@@ -122,8 +123,8 @@ fsm:add_transitions{
    --{"WAIT_OBJECTS_STATION1", "GRAB_STATION1", "vars.found_objects"},
    --{"WAIT_OBJECTS_STATION1", "RECOVER", timeout=10},
    {"DECIDE_WEIGHT", "UNKNOWN_WEIGHT", "vars.weight ~= nil and vars.weight == -1"},
-   {"DECIDE_WEIGHT", "TURN_RIGHT_COUNTER2_PRE_PUT", "vars.weight ~= nil and vars.weight < 9"},
-   {"DECIDE_WEIGHT", "HANDOFF_FULL", "vars.weight ~= nil and vars.weight >= 9"},
+   {"DECIDE_WEIGHT", "PUT_RECYCLE", "vars.weight ~= nil and vars.weight < 5.5"},
+   {"DECIDE_WEIGHT", "HANDOFF_FULL", "vars.weight ~= nil and vars.weight >= 5.5"},
    {"RECOVER", "START", timeout=5},
    {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
 }
@@ -145,7 +146,7 @@ function WAIT_OBJECT:loop()
       for i,o in ipairs(m.values.object_id) do
          --printf("Comparing %s / %s / %s", o, m.values.poss_act[i], m.values.side[i])
          if o:match("fuze_bottle[%d]*") and m.values.poss_act[i] == "grab"
-	 and not FIXED_SIDE or m.values.side[i] == FIXED_SIDE
+	 and (not FIXED_SIDE or m.values.side[i] == FIXED_SIDE)
 	 then
             self.fsm.vars.side         = m.values.side[i]
             self.fsm.vars.object_id    = o
@@ -159,9 +160,9 @@ end
 function DECIDE_WEIGHT:loop()
    if #grabbed.messages > 0 then
       local m = grabbed.messages[#grabbed.messages] -- only check most recent
-      if m.values.left_object_id:match("fuze_bottle[%d]*") and m.values.left_weight ~= -1 then
+      if m.values.left_object_id ~= "none" and m.values.left_weight ~= -1 then
 	 self.fsm.vars.weight = m.values.left_weight
-      elseif m.values.right_object_id:match("fuze_bottle[%d]*") and m.values.right_weight ~= -1 then
+      elseif m.values.right_object_id  ~= "none" and m.values.right_weight ~= -1 then
 	 self.fsm.vars.weight = m.values.right_weight
       --else
 	-- self.fsm.vars.weight = -1
