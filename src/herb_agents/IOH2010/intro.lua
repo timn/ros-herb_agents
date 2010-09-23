@@ -25,7 +25,7 @@ module(..., agentenv.module_init)
 -- Crucial skill information
 name               = "IOH2010_intro"
 fsm                = AgentHSM:new{name=name, debug=true, start="START", recover_state="RECOVER"}
-depends_skills     = {"say", "posegoto", "posefromto", "reset_arms"}
+depends_skills     = {"say", "pose_goto", "pose_fromto", "reset_arms"}
 depends_topics     = {
    { v="doorbell", name="/callbutton",              type="std_msgs/Byte" }
 }
@@ -46,6 +46,7 @@ TEXT_GREET="Hello visitors. I am HERB, the home exploring robot butler. "..
    "technical features."
 TEXT_ARM="I have two robotics arm, with 7 degrees of freedom each. Planning "..
    "my motions is tough work, but I am quite good at it."
+TEXT_HAND="This are my fine hands."
 TEXT_3DLASER="I use a 3D laser to perceive the environment while grasping objects."
 TEXT_PROSILICA="With this camera I look at objects."
 TEXT_OBLASER="The obstacle laser helps me to avoid obstacles while driving."
@@ -60,40 +61,40 @@ fsm:define_states{ export_to=_M,
    {"START", JumpState},
    {"RECOVER", JumpState},
    {"RECOVER_RELEASE", Skill, skills={{"reset_arms"}},  final_to="RECOVER",     fail_to="RECOVER"},
-   {"GREET",       Skill, skills={{"posegoto", pose_name="driving"},{"say", text=TEXT_GREET}},
+   {"GREET",       Skill, skills={{"pose_goto", pose_name="driving"},{"say", text=TEXT_GREET}},
       final_to="PTO_ARM",     fail_to="RECOVER"},
-   {"PTO_ARM",     Skill, skills={{"posefromto", pose_name_initial="driving", pose_name_final="pointing-at-arm"}},
+   {"PTO_ARM",     Skill, skills={{"pose_goto", pose_name="pointing-at-arm"}},
       final_to="EXP_ARM",     fail_to="RECOVER"},
    {"EXP_ARM",     Skill, skills={{"say", text=TEXT_ARM}},             final_to="PTO_HAND",    fail_to="RECOVER"},
    {"PTO_HAND",    Skill,
-      skills={{"posefromto", pose_name_initial="pointing-at-arm", pose_name_final="pointing-at-hand"}},
+      skills={{"pose_fromto", pose_name_initial="pointing-at-arm", pose_name_final="pointing-at-hand"}},
       final_to="EXP_HAND",     fail_to="RECOVER"},
    {"EXP_HAND",    Skill, skills={{"say", text=TEXT_HAND}},            final_to="PTO_3DLASER", fail_to="RECOVER"},
    {"PTO_3DLASER", Skill,
-      skills={{"posefromto", pose_name_initial="pointing-at-hand", pose_name_final="pointing-at-3dlaser"}},
+      skills={{"pose_fromto", pose_name_initial="pointing-at-hand", pose_name_final="pointing-at-laser"}},
       final_to="EXP_3DLASER",     fail_to="RECOVER"},
    {"EXP_3DLASER", Skill, skills={{"say", text=TEXT_3DLASER}},         final_to="PTO_PROSIL",  fail_to="RECOVER"},
    {"PTO_PROSIL",  Skill,
-      skills={{"posefromto", pose_name_initial="pointing-at-3dlaser", pose_name_final="pointing-at-prosilica"}},
+      skills={{"pose_fromto", pose_name_initial="pointing-at-laser", pose_name_final="pointing-at-camera"}},
       final_to="EXP_PROSIL",     fail_to="RECOVER"},
-   {"EXP_PROSIL",  Skill, skills={{"say", text=TEXT_PROSILICA}},       final_to="PTO_OBLASER", fail_to="RECOVER"},
-   {"PTO_OBLASER", Skill,
-      skills={{"posefromto", pose_name_initial="pointing-at-prosilica", pose_name_final="pointing-at-obslaser"}},
-      final_to="EXP_OBSLASER",     fail_to="RECOVER"},
-   {"EXP_OBLASER", Skill, skills={{"say", text=TEXT_OBLASER}},         final_to="PTO_GUTS",    fail_to="RECOVER"},
+   {"EXP_PROSIL",  Skill, skills={{"say", text=TEXT_PROSILICA}},       final_to="PTO_GUTS", fail_to="RECOVER"},
+   --{"PTO_OBLASER", Skill,
+   --   skills={{"pose_fromto", pose_name_initial="pointing-at-camera", pose_name_final="pointing-at-obslaser"}},
+   --   final_to="EXP_OBSLASER",     fail_to="RECOVER"},
+   --{"EXP_OBLASER", Skill, skills={{"say", text=TEXT_OBLASER}},         final_to="PTO_GUTS",    fail_to="RECOVER"},
    {"PTO_GUTS", Skill,
-      skills={{"posefromto", pose_name_initial="pointing-at-obslaser", pose_name_final="pointing-at-laptops"}},
+      skills={{"pose_fromto", pose_name_initial="pointing-at-camera", pose_name_final="pointing-at-laptops"}},
       final_to="EXP_GUTS",     fail_to="RECOVER"},
-   {"EXP_GUTS",    Skill, skills={{"say", text=TEXT_GUTS}},            final_to="PTO_SEGWAY" , fail_to="RECOVER"},
-   {"PTO_SEGWAY", Skill,
-      skills={{"posefromto", pose_name_initial="pointing-at-laptops", pose_name_final="pointing-at-segway"}},
-      final_to="EXP_GUTS",     fail_to="RECOVER"},
-   {"EXP_SEGWAY",  Skill, skills={{"say", text=TEXT_SEGWAY}},          final_to="RETRACT_ARM", fail_to="RECOVER"},
-   {"RETRACT_ARM", Skill,
-      skills={{"posefromto", pose_name_initial="pointing-at-segway", pose_name_final="driving"}},
-      final_to="EXP_GUTS",     fail_to="RECOVER"},
-   {"RETRACT_ARM", Skill, skills={{"reset_arms"}},                     final_to="EXP_MOVES",   fail_to="RECOVER"},
-   {"EXP_MOVES",   Skill, skills={{"say", text=TEXT_MOVEMENT}},        final_to="GOODBYE",     fail_to="RECOVER"},
+   {"EXP_GUTS",    Skill, skills={{"say", text=TEXT_GUTS}},            final_to="RETRACT_ARMS" , fail_to="RECOVER"},
+   --{"PTO_SEGWAY", Skill,
+   --   skills={{"pose_fromto", pose_name_initial="pointing-at-laptops", pose_name_final="pointing-at-segway"}},
+   --   final_to="EXP_GUTS",     fail_to="RECOVER"},
+   --{"EXP_SEGWAY",  Skill, skills={{"say", text=TEXT_SEGWAY}},          final_to="RETRACT_ARM", fail_to="RECOVER"},
+   {"RETRACT_ARMS", Skill,
+      skills={{"pose_fromto", pose_name_initial="pointing-at-laptops", pose_name_final="driving"}},
+      final_to="GOODBYE",     fail_to="RECOVER"},
+   --{"RETRACT_ARM", Skill, skills={{"reset_arms"}},                     final_to="EXP_MOVES",   fail_to="RECOVER"},
+   --{"EXP_MOVES",   Skill, skills={{"say", text=TEXT_MOVEMENT}},        final_to="GOODBYE",     fail_to="RECOVER"},
    {"GOODBYE",     Skill, skills={{"say", text=TEXT_GOODBYE}},         final_to="START",       fail_to="RECOVER"},
 }
 
