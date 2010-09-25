@@ -27,9 +27,8 @@ name               = "IOH2010"
 fsm                = AgentHSM:new{name=name, debug=true, start="START", recover_state="RECOVER"}
 depends_skills     = {"grab", "lockenv", "releasenv", "pickup", "handoff", "turn"}
 depends_topics     = {
-   { v="doorbell", name="/callbutton",              type="std_msgs/Byte" },
-   { v="objects",  name="/manipulation/obj_list",   type="manipulationapplet/ObjectActions", latching=true },
-   { v="envlock",  name="/manipulation/env/locked", type="std_msgs/Bool", latching=true },
+   { v="doorbell", name="/callbutton",               type="std_msgs/Byte" },
+   { v="grabbed",  name="/manipulation/grabbed_obj", type="manipulationapplet/GrabbedObjects", latching=true },
 }
 
 documentation      = [==[Intel Open House 2010.
@@ -37,6 +36,8 @@ documentation      = [==[Intel Open House 2010.
 
 -- Initialize as agent module
 agentenv.agent_module(...)
+
+OBJECT_PATTERN="fuze_bottle[%d]*"
 
 local utils = require("herb_agents.utils")
 
@@ -46,11 +47,11 @@ fsm:define_states{ export_to=_M,
    {"START", JumpState},
    {"RECOVER", JumpState},
    {"RECOVER_RELEASE", AgentSkillExecJumpState, skills={{"releaseenv"}, {"goinitial"}}, final_state="RECOVER", failure_state="RECOVER"},
-   {"ANNOUNCE_DETECT", AgentSkillExecJumpState, final_state="WAIT_OBJECT", failure_state="WAIT_OBJECT",
-      skills={{"say", text="Detecting bottle."}}},
-   {"WAIT_OBJECT", JumpState},
-   {"GRAB", AgentSkillExecJumpState, final_state="TURN", failure_state="ANNOUNCE_DETECT",
-      skills={{"grab_object"}, {"say", text="Grabbing the bottle"}}},
+   {"ANNOUNCE_GRAB", AgentSkillExecJumpState, final_state="GRAB", failure_state="GRAB",
+      skills={{"say", text="Detecting and grabbing bottle."}}},
+   {"GRAB", AgentSkillExecJumpState, final_state="DETERMINE_SIDE", failure_state="GRAB",
+      skills={{"grab_object"}}},
+   {"DETERMINE_SIDE", JumpState},
    {"TURN", AgentSkillExecJumpState, skills={{"turn", angle_rad=-math.pi/2.}},
       final_state="PUT_RECYCLE", failure_state="RECOVER"},
    {"PUT_RECYCLE", AgentSkillExecJumpState, final_state="GOINITIAL", failure_state="RECOVER",
@@ -61,9 +62,9 @@ fsm:define_states{ export_to=_M,
 }
 
 fsm:add_transitions{
-   {"START", "ANNOUNCE_DETECT", "#doorbell.messages > 0"},
-   {"WAIT_OBJECT", "GRAB", "vars.found_object"},
-   {"WAIT_OBJECT", "RECOVER", timeout=10},
+   {"START", "ANNOUNCE_GRAB", "#doorbell.messages > 0"},
+   {"DETERMINE_SIDE", "TURN", "vars.side_determined"},
+   {"DETERMINE_SIDE", "RECOVER", timeout=20},
    {"RECOVER", "START", timeout=5},
    {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
 }
@@ -75,25 +76,28 @@ function START:init()
    end
 end
 
-function WAIT_OBJECT:loop()
-   if #objects.messages > 0 then
-      local m = objects.messages[#objects.messages] -- only check most recent
-      for i,o in ipairs(m.values.object_id) do
-         --printf("Comparing %s / %s / %s", o, m.values.poss_act[i], m.values.side[i])
-         if o:match("fuze_bottle[%d]*") and m.values.poss_act[i] == "grab" then
-            self.fsm.vars.side         = m.values.side[i]
-            self.fsm.vars.object_id    = o
-            self.fsm.vars.found_object = true
-            break
-         end
-      end 
+function DETERMINE_SIDE:loop()
+   if #grabbed.messages > 0 then
+      local m = grabbed.messages[#grabbed.messages] -- only check most recent
+      if m.values.left_object_id:match(OBJECT_PATTERN) then
+	 self.fsm.vars.side = "left"
+	 self.fsm.vars.object_id = m.values.left_object_id
+	 self.fsm.vars.side_determined = true
+      elseif m.values.left_object_id:match(OBJECT_PATTERN) then
+	 self.fsm.vars.side = "right"
+	 self.fsm.vars.object_id = m.values.right_object_id
+	 self.fsm.vars.side_determined = true
+      end
    end
 end
 
 function GRAB:init()
-   self.skills[1].args = {side=self.fsm.vars.side, object_id=self.fsm.vars.object_id}
+   self.skills[1].args = {object_id=OBJECT_PATTERN}
 end
-GOINITIAL.init = GRAB.init
+
+function GOINITIAL:init()
+   self.skills[1].args = {side=self.fsm.vars.side}
+end
 --HANDOFF.init = GRAB.init
 
 function PUT_RECYCLE:init()
