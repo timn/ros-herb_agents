@@ -48,14 +48,14 @@ local utils = require("herb_agents.utils")
 
 
 TEXT_DRIVING_COUNTER1 = {"Driving to the counter.","Going to the counter.","Lets see what we have at the counter."}
-TEXT_DRIVING_RECYCLINGBIN = {"Driving to the recycling bin.","Going to the recycling bin.","I'm going to recycle this."}
-TEXT_GIVEDRINK = {"Here is your drink, please take it.","Here you are, please take the drink."}
+TEXT_DRIVING_RECYCLINGBIN = {"Driving to the recycling bin.","Going to the recycling bin.","I'm going to recycle this.", "Recycling", "I will be right back", "A good robot always recycles", "I need to trash this", "I hope you liked the drink"}
+TEXT_GIVEDRINK = {"Here is your drink, please take it.","Here you are, please take the drink.", "Please take the drink", "Here you go", "Would you like a drink", "I like this drink", "Fuze for you", "Fuze has five calories. Just five. Not six. Not four. Five.", "Good taste, five calories"}
 TEXT_PLACE = {"Let me put this down.","Let me put this on the table."}
-TEXT_GIVEME = {"Please give me an empty bottle."}
+TEXT_GIVEME = {"Please give me an empty bottle.", "Do you have any empty bottles", "I can recycle something for you"}
 TEXT_HOME = {"Going to home position."}
-TEXT_WEIGHT = {"I wonder how much this weighs.","Let me check how much this weighs."}
-TEXT_UNKOWNWEIGHT = {"I'm not sure how much this weighs, but I think it's empty"}
-TEXT_PUTRECYCLE = {"Saving the world, one bottle at a time.","That is the most satisfying part of my job"}
+TEXT_WEIGHT = {"I wonder how much this weighs.","Let me check how much this weighs.", "I wonder if this is empty"}
+TEXT_UNKOWNWEIGHT = {"This feels empty. But I'm not sure", "This one might be empty", "Sometimes it's hard to tell", "I cannot tell if this is empty"}
+TEXT_PUTRECYCLE = {"Saving the world, one bottle at a time","That is the most satisfying part of my job", "Saving the environment is so much fun","I do not know why people drink so much", "I need a raise", "I need to buy another recycling bin"}
 
 -- Setup FSM
 fsm:define_states{ export_to=_M,
