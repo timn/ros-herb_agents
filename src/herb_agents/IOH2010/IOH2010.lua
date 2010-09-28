@@ -47,15 +47,23 @@ local Skill = AgentSkillExecJumpState
 local utils = require("herb_agents.utils")
 
 
-TEXT_DRIVING_COUNTER1 = {"Driving to the counter.","Going to the counter.","Lets see what we have at the counter."}
-TEXT_DRIVING_RECYCLINGBIN = {"Driving to the recycling bin.","Going to the recycling bin.","I'm going to recycle this.", "Recycling", "I will be right back", "A good robot always recycles", "I need to trash this", "I hope you liked the drink"}
-TEXT_GIVEDRINK = {"Here is your drink, please take it.","Here you are, please take the drink.", "Please take the drink", "Here you go", "Would you like a drink", "I like this drink", "Fuze for you", "Fuze has five calories. Just five. Not six. Not four. Five.", "Good taste, five calories"}
-TEXT_PLACE = {"Let me put this down.","Let me put this on the table."}
-TEXT_GIVEME = {"Please give me an empty bottle.", "Do you have any empty bottles", "I can recycle something for you"}
-TEXT_HOME = {"Going to home position."}
-TEXT_WEIGHT = {"I wonder how much this weighs.","Let me check how much this weighs.", "I wonder if this is empty"}
-TEXT_UNKOWNWEIGHT = {"This feels empty. But I'm not sure", "This one might be empty", "Sometimes it's hard to tell", "I cannot tell if this is empty"}
-TEXT_PUTRECYCLE = {"Saving the world, one bottle at a time","That is the most satisfying part of my job", "Saving the environment is so much fun","I do not know why people drink so much", "I need a raise", "I need to buy another recycling bin"}
+TEXTS_HANDOFF = {"Here is your drink, please take it.", "Here you are, please take the drink.",
+		 "Please take the drink.", "Here you go.", "Would you like a drink? Then please take it.",
+		 "Fuze for you.", "Fuze has five calories. Just five. Not six. Not four. Five. Want it?",
+		 "Good taste, five calories. Want it?"}
+TEXTS_PLACE_STATION1 = {"Let me put this down.", "I will leave it on the table in case someone wants it later.",
+			"Let me put this on the table."}
+TEXTS_TAKE = {"Please give me an empty bottle.", "Do you have any empty bottles?",
+	      "I can recycle something for you.", "Do you have an empty bottle to take back?"}
+TEXTS_WEIGH = { "I wonder how much this weighs.", "Let me check how much this weighs.",
+		"I wonder if this is empty." }
+TEXTS_UNKOWN_WEIGHT = {"This feels full. But I'm not sure.", "This one might be full.",
+		       "Sometimes it's hard to tell.", "I cannot tell if this is full.",
+		       "Cannot determine weight, assuming full bottle."}
+TEXTS_PUT_RECYCLE = {"Saving the world, one bottle at a time.",
+		     "That is the most satisfying part of my job.",
+		     "Saving the environment is so much fun.", "I do not know why people drink so much.",
+		     "I need a raise for all these bottles.", "I need to buy another recycling bin."}
 
 -- Setup FSM
 fsm:define_states{ export_to=_M,
@@ -84,14 +92,13 @@ fsm:define_states{ export_to=_M,
    {"GOTO_STATION1", Skill, skills={{"goto", place="station1"}, {"say", text="Delivering the drink."}},
       final_state="HANDOFF", failure_state="RECOVER_MOTION"},
       --final_state="TURN_LEFT_STATION1_PLACE", failure_state="RECOVER"},
-   {"HANDOFF", Skill, skills={{"give"}, {"say", text="Here is the drink, please take it!"}},
+   {"HANDOFF", Skill, skills={{"give"}, {"say"}},
       --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
       final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
    {"RETRACT_ARM_HANDOFF", Skill, skills={{"goinitial"}},
       final_state="TAKE", failure_state="RECOVER"},
    {"TURN_LEFT_STATION1_PLACE", Skill,
-      skills={{"turn", angle_rad=math.pi/2.},
-              {"say", text="I will leave it on the table in case someone wants it later"}},
+      skills={{"turn", angle_rad=math.pi/2.}, {"say"}},
       final_state="WAIT_STATION1", failure_state="RECOVER"},
    {"WAIT_STATION1", JumpState},
       --final_state="TURN_RIGHT_STATION1", failure_state="RECOVER"},
@@ -103,11 +110,11 @@ fsm:define_states{ export_to=_M,
       final_state="TAKE", failure_state="TAKE"},
       --final_state="GOTO_COUNTER2", failure_state="RECOVER"},
    {"TAKE", Skill,
-      skills={{"take", side="right", exec_timelimit=5}, {"say", text="Do you have an empty bottle to take back?"}},
+      skills={{"take", side="right", exec_timelimit=5}, {"say"}},
       final_state="TAKE_RETRACT", failure_state="RETRACT_ARM_STATION1_EMPTY"},
       --final_state="GOTO_COUNTER2", failure_state="TURN_LEFT_STATION1_PRE_GRAB"},
    {"TAKE_RETRACT", Skill,
-      skills={{"pickup", side="right"}, {"say", text="Going to the counter. Watch out for my elbow while I turn."}},
+      skills={{"pickup", side="right"}, {"say", text="Going to the counter. Watch out for my ell boh while I turn."}},
       final_state="GOTO_COUNTER2", failure_state="GOTO_COUNTER2"},
    --{"TURN_LEFT_STATION1_PRE_GRAB", Skill, skills={{"turn", angle_rad=math.pi/2.}},
    --   final_state="WAIT_OBJECTS_STATION1", failure_state="RECOVER"},
@@ -123,19 +130,17 @@ fsm:define_states{ export_to=_M,
    {"GOTO_COUNTER2_EMPTY", Skill,
       skills={{"goto", place="counter2"}, {"say", text="Going back to the counter without a bottle."}},
       final_state="START", failure_state="RECOVER_MOTION"},
-   {"WEIGH", Skill, skills={{"weigh", side="right"}, {"say", text="Weighing the bottle."}},
+   {"WEIGH", Skill, skills={{"weigh", side="right"}, {"say"}},
       final_state="DECIDE_WEIGHT", failure_state="UNKNOWN_WEIGHT"},
    {"DECIDE_WEIGHT", JumpState},
-   {"UNKNOWN_WEIGHT", Skill, skills={{"say", text="Cannot determine weight, assuming full bottle."}},
-      final_state="PLACE_FULL", failure_state="PLACE_FULL"},
+   {"UNKNOWN_WEIGHT", Skill, skills={{"say"}}, final_state="PLACE_FULL", failure_state="PLACE_FULL"},
    {"TURN_RIGHT_COUNTER2", Skill,
       skills={{"turn", angle_rad=-math.pi/2.}, {"say", text="The bottle is empty, going to recycle."}},
       final_state="WAIT_RECYCLE", failure_state="RECOVER_MOTION"},
       --final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
    {"WAIT_RECYCLE", JumpState},
    {"PUT_RECYCLE", Skill,
-      skills={{"put", side="right", object_id="recyclingbin2"},
-	      {"say", text="Saving the world, one bottle at a time!"}},
+      skills={{"put", side="right", object_id="recyclingbin2"}, {"say"}},
       final_state="RETRACT_ARM_COUNTER2", failure_state="GIVE_RECYCLE"},
    {"GIVE_RECYCLE", AgentSkillExecJumpState, final_state="RETRACT_ARM_COUNTER2", failure_state="FAILED_RELAX_LEFT",
       skills={{"give", side="right"}, {"say", text="Cannot reach the recycling bin. Please take."}}},
@@ -185,6 +190,11 @@ fsm:add_transitions{
    {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
    {"FAILED", "FAILED_GOINITIAL_LEFT", "#doorbell.messages > 0"},
 }
+
+function random_text(texts)
+   return texts[math.random(#texts)]
+end
+
 
 function START:init()
    self.fsm:reset_trace()
@@ -257,24 +267,36 @@ RETRACT_ARM_STATION1.init = RETRACT_ARM_HANDOFF.init
 
 function HANDOFF:init()
    self.skills[1].args = {side=self.fsm.vars.side, exec_timelimit=5}
+   self.skills[2].args = {text=random_text(TEXTS_HANDOFF)}
 end
---TAKE.init = HANDOFF.init
+
+function TAKE:init()
+   self.skills[2].args = {text=random_text(TEXTS_TAKE)}
+end
+
+function TURN_LEFT_STATION1_PLACE:init()
+   self.skills[2].args = {text=random_text(TEXTS_PLACE_STATION1)}
+end
 
 function PLACE_STATION1:init()
    self.skills[1].args = {side=self.fsm.vars.side, object_id="tabletop2"}
 end
 
---function WEIGH:init()
---   self.skills[1].args = {side=self.fsm.vars.side}
---end
+function WEIGH:init()
+   self.skills[2].args = {text=random_text(TEXTS_WEIGH)}
+end
+
+function UNKNOWN_WEIGHT:init()
+   self.skills[1].args = {text=random_text(TEXTS_UNKNOWN_WEIGHT)}
+end
 
 --function PLACE_FULL:init()
 --   self.skills[1].args = {side=self.fsm.vars.side, object_id="tabletop"}
 --end
 
---function PUT_RECYCLE:init()
---   self.skills[1].args = {side=self.fsm.vars.side, object_id="recyclingbin2"}
---end
+function PUT_RECYCLE:init()
+   self.skills[2].args = {text=random_text(TEXTS_PUT_RECYCLE)}
+end
 
 function RECOVER:init()
    if self.fsm.error and self.fsm.error ~= "" then
