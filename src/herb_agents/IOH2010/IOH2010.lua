@@ -92,7 +92,8 @@ fsm:define_states{ export_to=_M,
    {"TURN_LEFT_STATION1_PLACE", Skill,
       skills={{"turn", angle_rad=math.pi/2.},
               {"say", text="I will leave it on the table in case someone wants it later"}},
-      final_state="PLACE_STATION1", failure_state="RECOVER"},
+      final_state="WAIT_STATION1", failure_state="RECOVER"},
+   {"WAIT_STATION1", JumpState},
       --final_state="TURN_RIGHT_STATION1", failure_state="RECOVER"},
    {"PLACE_STATION1", Skill, skills={{"place"}},
       final_state="RETRACT_ARM_STATION1", failure_state="RETRACT_ARM_STATION1"},
@@ -101,10 +102,12 @@ fsm:define_states{ export_to=_M,
    {"TURN_RIGHT_STATION1_PLACE", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
       final_state="TAKE", failure_state="TAKE"},
       --final_state="GOTO_COUNTER2", failure_state="RECOVER"},
-   {"TAKE", Skill, skills={{"take"}, {"say", text="Do you have an empty bottle to take back?"}},
+   {"TAKE", Skill,
+      skills={{"take", side="right", exec_timelimit=5}, {"say", text="Do you have an empty bottle to take back?"}},
       final_state="TAKE_RETRACT", failure_state="RETRACT_ARM_STATION1_EMPTY"},
       --final_state="GOTO_COUNTER2", failure_state="TURN_LEFT_STATION1_PRE_GRAB"},
-   {"TAKE_RETRACT", Skill, skills={{"pickup"}},
+   {"TAKE_RETRACT", Skill,
+      skills={{"pickup", side="right"}, {"say", text="Going to the counter. Watch out for my elbow while I turn."}},
       final_state="GOTO_COUNTER2", failure_state="GOTO_COUNTER2"},
    --{"TURN_LEFT_STATION1_PRE_GRAB", Skill, skills={{"turn", angle_rad=math.pi/2.}},
    --   final_state="WAIT_OBJECTS_STATION1", failure_state="RECOVER"},
@@ -113,27 +116,30 @@ fsm:define_states{ export_to=_M,
    --   skills={{"grab_object"}}},
    --{"TURN_LEFT_STATION1_POST_GRAB", Skill, skills={{"turn", angle_rad=math.pi/2.}},
    --   final_state="GOTO_COUNTER2", failure_state="RECOVER"},
-   {"GOTO_COUNTER2", Skill, skills={{"goto", place="counter2"}, {"say", text="Going to the counter."}},
+   {"GOTO_COUNTER2", Skill, skills={{"goto", place="counter2"}},
       final_state="WEIGH", failure_state="RECOVER_MOTION"},
-   {"RETRACT_ARM_STATION1_EMPTY", Skill, skills={{"goinitial"}},
+   {"RETRACT_ARM_STATION1_EMPTY", Skill, skills={{"goinitial", side="right"}},
       final_state="GOTO_COUNTER2_EMPTY", failure_state="GOTO_COUNTER2_EMPTY"},
    {"GOTO_COUNTER2_EMPTY", Skill,
       skills={{"goto", place="counter2"}, {"say", text="Going back to the counter without a bottle."}},
       final_state="START", failure_state="RECOVER_MOTION"},
-   {"WEIGH", Skill, skills={{"weigh"}, {"say", text="Weighing the bottle."}},
+   {"WEIGH", Skill, skills={{"weigh", side="right"}, {"say", text="Weighing the bottle."}},
       final_state="DECIDE_WEIGHT", failure_state="UNKNOWN_WEIGHT"},
    {"DECIDE_WEIGHT", JumpState},
    {"UNKNOWN_WEIGHT", Skill, skills={{"say", text="Cannot determine weight, assuming full bottle."}},
       final_state="PLACE_FULL", failure_state="PLACE_FULL"},
    {"TURN_RIGHT_COUNTER2", Skill,
       skills={{"turn", angle_rad=-math.pi/2.}, {"say", text="The bottle is empty, going to recycle."}},
-      final_state="PUT_RECYCLE", failure_state="RECOVER_MOTION"},
+      final_state="WAIT_RECYCLE", failure_state="RECOVER_MOTION"},
       --final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
-   {"PUT_RECYCLE", Skill, skills={{"put"}, {"say", text="Saving the world, one bottle at a time!"}},
+   {"WAIT_RECYCLE", JumpState},
+   {"PUT_RECYCLE", Skill,
+      skills={{"put", side="right", object_id="recyclingbin2"},
+	      {"say", text="Saving the world, one bottle at a time!"}},
       final_state="RETRACT_ARM_COUNTER2", failure_state="GIVE_RECYCLE"},
    {"GIVE_RECYCLE", AgentSkillExecJumpState, final_state="RETRACT_ARM_COUNTER2", failure_state="FAILED_RELAX_LEFT",
-      skills={{"give"}, {"say", text="Cannot reach the recycling bin. Please take."}}},
-   {"RETRACT_ARM_COUNTER2", Skill, skills={{"goinitial"}},
+      skills={{"give", side="right"}, {"say", text="Cannot reach the recycling bin. Please take."}}},
+   {"RETRACT_ARM_COUNTER2", Skill, skills={{"goinitial", side="right"}},
       final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
    {"TURN_LEFT_COUNTER2", Skill, skills={{"turn", angle_rad=math.pi/2.}},
       final_state="START", failure_state="RECOVER_MOTION"},
@@ -142,13 +148,15 @@ fsm:define_states{ export_to=_M,
    --{"HANDOFF_FULL", Skill, skills={{"give"}, {"say", text="Full bottle, please take!"}},
       --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
    --   final_state="TURN_RIGHT_COUNTER2_POST", failure_state="TURN_RIGHT_COUNTER2_POST"},
-   {"PLACE_FULL", Skill, skills={{"place"}, {"say", text="Full bottle, putting back on the table!"}},
+   {"PLACE_FULL", Skill,
+      skills={{"place", side="right", object_id="tabletop"},
+	      {"say", text="Full bottle, putting back on the table!"}},
       --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
       final_state="GOINITIAL_FULL", failure_state="FAILED_RELAX_LEFT"},
-   {"GOINITIAL_FULL", Skill, skills={{"goinitial"}},
+   {"GOINITIAL_FULL", Skill, skills={{"goinitial", side="right"}},
       final_state="START", failure_state="RECOVER"},
    {"FAILED_RELAX_LEFT", AgentSkillExecJumpState,
-    skills={{"relax_arm", side="left"}, {"say", text="User assistance required. Please help."}},
+    skills={{"relax_arm", side="right"}, {"say", text="User assistance required. Please help."}},
     final_state="FAILED_RELAX_RIGHT", failure_state="FAILED_RELAX_RIGHT"},
    {"FAILED_RELAX_RIGHT", AgentSkillExecJumpState, skills={{"relax_arm", side="right"}},
     final_state="FAILED", failure_state="FAILED"},
@@ -165,12 +173,14 @@ fsm:add_transitions{
    --{"WAIT_OBJECT", "OBJECT_NOT_VISIBLE", timeout=20},
    --{"WAIT_OBJECTS_STATION1", "GRAB_STATION1", "vars.found_objects"},
    --{"WAIT_OBJECTS_STATION1", "RECOVER", timeout=10},
+   {"WAIT_STATION1", "PLACE_STATION1", timeout=5},
    {"PLACE_STATION1", "GOTO_COUNTER2", "self.error and self.error:match('.*Planner failed.*')"},
    {"DETERMINE_SIDE", "GOTO_STATION1", "vars.side_determined"},
    --{"DETERMINE_SIDE", "GOTO_STATION1", timeout=20},
    {"DECIDE_WEIGHT", "UNKNOWN_WEIGHT", "vars.weight ~= nil and vars.weight == -1"},
    {"DECIDE_WEIGHT", "TURN_RIGHT_COUNTER2", "vars.weight ~= nil and vars.weight < 7"},
    {"DECIDE_WEIGHT", "PLACE_FULL", "vars.weight ~= nil and vars.weight >= 7"},
+   {"WAIT_RECYCLE", "PUT_RECYCLE", timeout=5},
    {"RECOVER", "START", timeout=5},
    {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
    {"FAILED", "FAILED_GOINITIAL_LEFT", "#doorbell.messages > 0"},
@@ -240,31 +250,31 @@ function RETRACT_ARM_HANDOFF:init()
    self.skills[1].args = {side=self.fsm.vars.side}
 end
 RETRACT_ARM_STATION1.init = RETRACT_ARM_HANDOFF.init
-RETRACT_ARM_STATION1_EMPTY.init = RETRACT_ARM_HANDOFF.init
-RETRACT_ARM_COUNTER2.init = RETRACT_ARM_HANDOFF.init
-GOINITIAL_FULL.init = RETRACT_ARM_HANDOFF.init
-TAKE_RETRACT.init = RETRACT_ARM_HANDOFF.init
+--RETRACT_ARM_STATION1_EMPTY.init = RETRACT_ARM_HANDOFF.init
+--RETRACT_ARM_COUNTER2.init = RETRACT_ARM_HANDOFF.init
+--GOINITIAL_FULL.init = RETRACT_ARM_HANDOFF.init
+--TAKE_RETRACT.init = RETRACT_ARM_HANDOFF.init
 
 function HANDOFF:init()
    self.skills[1].args = {side=self.fsm.vars.side, exec_timelimit=5}
 end
-TAKE.init = HANDOFF.init
+--TAKE.init = HANDOFF.init
 
 function PLACE_STATION1:init()
    self.skills[1].args = {side=self.fsm.vars.side, object_id="tabletop2"}
 end
 
-function WEIGH:init()
-   self.skills[1].args = {side=self.fsm.vars.side}
-end
+--function WEIGH:init()
+--   self.skills[1].args = {side=self.fsm.vars.side}
+--end
 
-function PLACE_FULL:init()
-   self.skills[1].args = {side=self.fsm.vars.side, object_id="tabletop"}
-end
+--function PLACE_FULL:init()
+--   self.skills[1].args = {side=self.fsm.vars.side, object_id="tabletop"}
+--end
 
-function PUT_RECYCLE:init()
-   self.skills[1].args = {side=self.fsm.vars.side, object_id="recyclingbin2"}
-end
+--function PUT_RECYCLE:init()
+--   self.skills[1].args = {side=self.fsm.vars.side, object_id="recyclingbin2"}
+--end
 
 function RECOVER:init()
    if self.fsm.error and self.fsm.error ~= "" then
