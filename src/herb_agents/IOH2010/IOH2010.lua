@@ -41,7 +41,7 @@ agentenv.agent_module(...)
 
 local HOME_POS = "counter1"
 --local QUICKJUMP = "WEIGH"
-local FIXED_SIDE = "right"
+OBJECT_PATTERN="fuze_bottle[%d]*"
 
 local Skill = AgentSkillExecJumpState
 local utils = require("herb_agents.utils")
@@ -61,40 +61,51 @@ TEXT_PUTRECYCLE = {"Saving the world, one bottle at a time","That is the most sa
 fsm:define_states{ export_to=_M,
    closure={doorbell=doorbell, envlock=envlock},
    {"START", JumpState},
+   {"FAILED", JumpState},
    {"RECOVER", JumpState},
    {"RECOVER_RELEASE", Skill, skills={{"releaseenv"}, {"goinitial"}},
       final_state="RECOVER", failure_state="RECOVER"},
-   {"GOTO_COUNTER1", Skill, skills={{"goto", place="counter1"}, {"say", text="Going to counter 1"}},
-      final_state="WAIT_OBJECT", failure_state="GOTO_COUNTER1"},
+   {"RECOVER_MOTION", Skill, skills={{"say", text="Motion component disabled. Cannot drive. Please help."}},
+      final_state="RECOVER", failure_state="RECOVER"},
+   --{"GOTO_COUNTER2_START", Skill, skills={{"goto", place="counter2"}, {"say", text="Going to storage"}},
+   --   final_state="GRAB", failure_state="RECOVER_MOTION"},
       --final_state="GOTO_STATION1", failure_state="RECOVER"},
-   {"WAIT_OBJECT", JumpState},
+   --{"WAIT_OBJECT", JumpState},
    {"OBJECT_NOT_VISIBLE", Skill, skills={{"say", text="I cannot see the object, please help."}},
-      final_state="WAIT_OBJECT", failure_state="WAIT_OBJECT"},
-   {"GRAB", Skill, final_state="GOTO_STATION1", failure_state="GRAB_TRYAGAIN",
-      skills={{"grab_object"}}},
-   {"GRAB_TRYAGAIN", Skill, final_state="WAIT_OBJECT", failure_state="WAIT_OBJECT",
-      skills={{"say", text="Oops, grasping failed, trying again."}}},
-   {"GOTO_STATION1", Skill, skills={{"goto", place="station1"}, {"say", text="Going to recycling bin"}},
-      final_state="HANDOFF", failure_state="RECOVER"},
+      final_state="GRAB", failure_state="GRAB"},
+   {"GRAB_ANNOUNCE", Skill, final_state="GRAB", failure_state="GRAB",
+      skills={{"say", text="Let me get you a drink."}}},
+   {"GRAB", Skill, final_state="DETERMINE_SIDE", failure_state="GRAB_TRYAGAIN_LEFT",
+      skills={{"grab_object", object_id=OBJECT_PATTERN}}},
+   {"DETERMINE_SIDE", JumpState},
+   {"GRAB_TRYAGAIN_LEFT", Skill, final_state="GRAB_TRYAGAIN_RIGHT", failure_state="GRAB_TRYAGAIN_RIGHT",
+      skills={{"say", text="Oops, grasping failed, trying again."}, {"goinitial", side="left"}}},
+   {"GRAB_TRYAGAIN_RIGHT", Skill, final_state="GRAB", failure_state="GRAB", skills={{"goinitial", side="right"}}},
+   {"GOTO_STATION1", Skill, skills={{"goto", place="station1"}, {"say", text="Delivering the drink."}},
+      final_state="HANDOFF", failure_state="RECOVER_MOTION"},
       --final_state="TURN_LEFT_STATION1_PLACE", failure_state="RECOVER"},
    {"HANDOFF", Skill, skills={{"give"}, {"say", text="Here is the drink, please take it!"}},
       --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
-      final_state="RETRACT_ARM_HANDOFF", failure_state="RETRACT_ARM_HANDOFF"},
+      final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
    {"RETRACT_ARM_HANDOFF", Skill, skills={{"goinitial"}},
       final_state="TAKE", failure_state="RECOVER"},
-   --{"TURN_LEFT_STATION1_PLACE", Skill, skills={{"turn", angle_rad=math.pi/2.}},
-   --   final_state="PUT_TABLE", failure_state="RECOVER"},
+   {"TURN_LEFT_STATION1_PLACE", Skill,
+      skills={{"turn", angle_rad=math.pi/2.},
+              {"say", text="I will leave it on the table in case someone wants it later"}},
+      final_state="PLACE_STATION1", failure_state="RECOVER"},
       --final_state="TURN_RIGHT_STATION1", failure_state="RECOVER"},
-   --{"PUT_TABLE", Skill, skills={{"put"}, {"say", text="Placing bottle on table."}},
-   --   final_state="RETRACT_ARM_STATION1", failure_state="RECOVER"},
-   --{"RETRACT_ARM_STATION1", Skill, skills={{"goinitial"}},
-   --   final_state="TURN_RIGHT_STATION1_PLACE", failure_state="RECOVER"},
-   --{"TURN_RIGHT_STATION1_PLACE", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
-   --   final_state="TAKE", failure_state="RECOVER"},
+   {"PLACE_STATION1", Skill, skills={{"place"}},
+      final_state="RETRACT_ARM_STATION1", failure_state="RETRACT_ARM_STATION1"},
+   {"RETRACT_ARM_STATION1", Skill, skills={{"goinitial"}},
+      final_state="TURN_RIGHT_STATION1_PLACE", failure_state="TURN_RIGHT_STATION1_PLACE"},
+   {"TURN_RIGHT_STATION1_PLACE", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
+      final_state="TAKE", failure_state="TAKE"},
       --final_state="GOTO_COUNTER2", failure_state="RECOVER"},
-   {"TAKE", Skill, skills={{"take"}, {"say", text="Please give me a bottle to take back."}},
-      final_state="GOTO_COUNTER2", failure_state="GOTO_COUNTER2"},
+   {"TAKE", Skill, skills={{"take"}, {"say", text="Do you have an empty bottle to take back?"}},
+      final_state="TAKE_RETRACT", failure_state="RETRACT_ARM_STATION1_EMPTY"},
       --final_state="GOTO_COUNTER2", failure_state="TURN_LEFT_STATION1_PRE_GRAB"},
+   {"TAKE_RETRACT", Skill, skills={{"pickup"}},
+      final_state="GOTO_COUNTER2", failure_state="GOTO_COUNTER2"},
    --{"TURN_LEFT_STATION1_PRE_GRAB", Skill, skills={{"turn", angle_rad=math.pi/2.}},
    --   final_state="WAIT_OBJECTS_STATION1", failure_state="RECOVER"},
    --{"WAIT_OBJECTS_STATION1", JumpState},
@@ -102,42 +113,67 @@ fsm:define_states{ export_to=_M,
    --   skills={{"grab_object"}}},
    --{"TURN_LEFT_STATION1_POST_GRAB", Skill, skills={{"turn", angle_rad=math.pi/2.}},
    --   final_state="GOTO_COUNTER2", failure_state="RECOVER"},
-   {"GOTO_COUNTER2", Skill, skills={{"goto", place="counter2"}, {"say", text="Going to home position."}},
-      final_state="TURN_RIGHT_COUNTER2", failure_state="RECOVER"},
-   {"TURN_RIGHT_COUNTER2", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
-      final_state="WEIGH", failure_state="RECOVER"},
-      --final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
-   {"WEIGH", Skill, skills={{"weigh"}, {"say", text="Weighing the object."}},
+   {"GOTO_COUNTER2", Skill, skills={{"goto", place="counter2"}, {"say", text="Going to the counter."}},
+      final_state="WEIGH", failure_state="RECOVER_MOTION"},
+   {"RETRACT_ARM_STATION1_EMPTY", Skill, skills={{"goinitial"}},
+      final_state="GOTO_COUNTER2_EMPTY", failure_state="GOTO_COUNTER2_EMPTY"},
+   {"GOTO_COUNTER2_EMPTY", Skill,
+      skills={{"goto", place="counter2"}, {"say", text="Going back to the counter without a bottle."}},
+      final_state="START", failure_state="RECOVER_MOTION"},
+   {"WEIGH", Skill, skills={{"weigh"}, {"say", text="Weighing the bottle."}},
       final_state="DECIDE_WEIGHT", failure_state="UNKNOWN_WEIGHT"},
    {"DECIDE_WEIGHT", JumpState},
-   {"UNKNOWN_WEIGHT", Skill, skills={{"say", text="Cannot determine weight, assuming empty bottle"}},
-      final_state="PUT_RECYCLE", failure_state="RECOVER"},
-   {"PUT_RECYCLE", Skill,
-      skills={{"put"},
-              {"say", text="The bottle is empty, going to recycle. Saving the world, one bottle at a time"}},
-      final_state="RETRACT_ARM_COUNTER2", failure_state="RECOVER"},
+   {"UNKNOWN_WEIGHT", Skill, skills={{"say", text="Cannot determine weight, assuming full bottle."}},
+      final_state="PLACE_FULL", failure_state="PLACE_FULL"},
+   {"TURN_RIGHT_COUNTER2", Skill,
+      skills={{"turn", angle_rad=-math.pi/2.}, {"say", text="The bottle is empty, going to recycle."}},
+      final_state="PUT_RECYCLE", failure_state="RECOVER_MOTION"},
+      --final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
+   {"PUT_RECYCLE", Skill, skills={{"put"}, {"say", text="Saving the world, one bottle at a time!"}},
+      final_state="RETRACT_ARM_COUNTER2", failure_state="GIVE_RECYCLE"},
+   {"GIVE_RECYCLE", AgentSkillExecJumpState, final_state="RETRACT_ARM_COUNTER2", failure_state="FAILED_RELAX_LEFT",
+      skills={{"give"}, {"say", text="Cannot reach the recycling bin. Please take."}}},
    {"RETRACT_ARM_COUNTER2", Skill, skills={{"goinitial"}},
-      final_state="TURN_RIGHT_COUNTER2_POST", failure_state="RECOVER"},
-   {"TURN_RIGHT_COUNTER2_POST", Skill, skills={{"turn", angle_rad=-math.pi/2.}},
-      final_state="START", failure_state="RECOVER"},
+      final_state="TURN_LEFT_COUNTER2", failure_state="RECOVER"},
+   {"TURN_LEFT_COUNTER2", Skill, skills={{"turn", angle_rad=math.pi/2.}},
+      final_state="START", failure_state="RECOVER_MOTION"},
    --{"PLACE_COUNTER2", Skill, skills={{"place"}, {"say", text="Saving the world, one bottle at a time"}},
    --   final_state="RETRACT_ARM_COUNTER2", failure_state="RECOVER"},
-   {"HANDOFF_FULL", Skill, skills={{"give"}, {"say", text="Full bottle, please take!"}},
+   --{"HANDOFF_FULL", Skill, skills={{"give"}, {"say", text="Full bottle, please take!"}},
       --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
-      final_state="START", failure_state="START"},
+   --   final_state="TURN_RIGHT_COUNTER2_POST", failure_state="TURN_RIGHT_COUNTER2_POST"},
+   {"PLACE_FULL", Skill, skills={{"place"}, {"say", text="Full bottle, putting back on the table!"}},
+      --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
+      final_state="GOINITIAL_FULL", failure_state="FAILED_RELAX_LEFT"},
+   {"GOINITIAL_FULL", Skill, skills={{"goinitial"}},
+      final_state="START", failure_state="RECOVER"},
+   {"FAILED_RELAX_LEFT", AgentSkillExecJumpState,
+    skills={{"relax_arm", side="left"}, {"say", text="User assistance required. Please help."}},
+    final_state="FAILED_RELAX_RIGHT", failure_state="FAILED_RELAX_RIGHT"},
+   {"FAILED_RELAX_RIGHT", AgentSkillExecJumpState, skills={{"relax_arm", side="right"}},
+    final_state="FAILED", failure_state="FAILED"},
+   {"FAILED_GOINITIAL_LEFT", AgentSkillExecJumpState, skills={{"goinitial", side="left"}},
+    final_state="FAILED_GOINITIAL_RIGHT", failure_state="FAILED_GOINITIAL_RIGHT"},
+   {"FAILED_GOINITIAL_RIGHT", AgentSkillExecJumpState, skills={{"goinitial", side="right"}},
+    final_state="START", failure_state="START"},
 }
 
 fsm:add_transitions{
-   {"START", QUICKJUMP or "GOTO_COUNTER1", "#doorbell.messages > 0"},
-   {"WAIT_OBJECT", "GRAB", "vars.found_object"},
-   {"WAIT_OBJECT", "OBJECT_NOT_VISIBLE", timeout=20},
+   {"START", QUICKJUMP or "GRAB_ANNOUNCE", "#doorbell.messages > 0"},
+   {"GRAB", "OBJECT_NOT_VISIBLE", "self.error == 'object not visible'"},
+   --{"WAIT_OBJECT", "GRAB", "vars.found_object"},
+   --{"WAIT_OBJECT", "OBJECT_NOT_VISIBLE", timeout=20},
    --{"WAIT_OBJECTS_STATION1", "GRAB_STATION1", "vars.found_objects"},
    --{"WAIT_OBJECTS_STATION1", "RECOVER", timeout=10},
+   {"PLACE_STATION1", "GOTO_COUNTER2", "self.error and self.error:match('.*Planner failed.*')"},
+   {"DETERMINE_SIDE", "GOTO_STATION1", "vars.side_determined"},
+   --{"DETERMINE_SIDE", "GOTO_STATION1", timeout=20},
    {"DECIDE_WEIGHT", "UNKNOWN_WEIGHT", "vars.weight ~= nil and vars.weight == -1"},
-   {"DECIDE_WEIGHT", "PUT_RECYCLE", "vars.weight ~= nil and vars.weight < 5.5"},
-   {"DECIDE_WEIGHT", "HANDOFF_FULL", "vars.weight ~= nil and vars.weight >= 5.5"},
+   {"DECIDE_WEIGHT", "TURN_RIGHT_COUNTER2", "vars.weight ~= nil and vars.weight < 7"},
+   {"DECIDE_WEIGHT", "PLACE_FULL", "vars.weight ~= nil and vars.weight >= 7"},
    {"RECOVER", "START", timeout=5},
    {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
+   {"FAILED", "FAILED_GOINITIAL_LEFT", "#doorbell.messages > 0"},
 }
 
 function START:init()
@@ -147,6 +183,7 @@ function START:init()
    end
 end
 
+--[[
 function WAIT_OBJECT:init()
    self.fsm.vars.found_object = false
 end
@@ -167,6 +204,23 @@ function WAIT_OBJECT:loop()
       end 
    end
 end
+--]]
+
+function DETERMINE_SIDE:loop()
+   if #grabbed.messages > 0 then
+      local m = grabbed.messages[#grabbed.messages] -- only check most recent
+      print_debug("Comparing %s/%s to %s", m.values.left_object_id, m.values.right_object_id, OBJECT_PATTERN)
+      if m.values.left_object_id:match(OBJECT_PATTERN) then
+	 self.fsm.vars.side = "left"
+	 self.fsm.vars.object_id = m.values.left_object_id
+	 self.fsm.vars.side_determined = true
+      elseif m.values.right_object_id:match(OBJECT_PATTERN) then
+	 self.fsm.vars.side = "right"
+	 self.fsm.vars.object_id = m.values.right_object_id
+	 self.fsm.vars.side_determined = true
+      end
+   end
+end
 
 function DECIDE_WEIGHT:loop()
    if #grabbed.messages > 0 then
@@ -181,26 +235,35 @@ function DECIDE_WEIGHT:loop()
    end
 end
 
-function GRAB:init()
+function RETRACT_ARM_HANDOFF:init()
    print_warn("Setting side for %s", self.name)
-   self.skills[1].args = {side=self.fsm.vars.side or FIXED_SIDE, object_id=self.fsm.vars.object_id}
+   self.skills[1].args = {side=self.fsm.vars.side}
 end
---RETRACT_ARM_STATION1.init = GRAB.init
-RETRACT_ARM_HANDOFF.init = GRAB.init
-RETRACT_ARM_COUNTER2.init = GRAB.init
+RETRACT_ARM_STATION1.init = RETRACT_ARM_HANDOFF.init
+RETRACT_ARM_STATION1_EMPTY.init = RETRACT_ARM_HANDOFF.init
+RETRACT_ARM_COUNTER2.init = RETRACT_ARM_HANDOFF.init
+GOINITIAL_FULL.init = RETRACT_ARM_HANDOFF.init
+TAKE_RETRACT.init = RETRACT_ARM_HANDOFF.init
 
 function HANDOFF:init()
-   self.skills[1].args = {side=self.fsm.vars.side or FIXED_SIDE, exec_timelimit=15}
+   self.skills[1].args = {side=self.fsm.vars.side, exec_timelimit=5}
 end
 TAKE.init = HANDOFF.init
 
-function WEIGH:init()
-   self.skills[1].args = {side=self.fsm.vars.side or FIXED_SIDE}
+function PLACE_STATION1:init()
+   self.skills[1].args = {side=self.fsm.vars.side, object_id="tabletop2"}
 end
-HANDOFF_FULL.init = WEIGH.init
+
+function WEIGH:init()
+   self.skills[1].args = {side=self.fsm.vars.side}
+end
+
+function PLACE_FULL:init()
+   self.skills[1].args = {side=self.fsm.vars.side, object_id="tabletop"}
+end
 
 function PUT_RECYCLE:init()
-   self.skills[1].args = {side=self.fsm.vars.side or FIXED_SIDE, object_id="recyclingbin2"}
+   self.skills[1].args = {side=self.fsm.vars.side, object_id="recyclingbin2"}
 end
 
 function RECOVER:init()
@@ -210,5 +273,5 @@ function RECOVER:init()
 end
 
 function RECOVER_RELEASE:init()
-   self.skills[2].args = {side=self.fsm.vars.side or FIXED_SIDE}
+   self.skills[2].args = {side=self.fsm.vars.side}
 end
