@@ -27,7 +27,8 @@ name               = "IOH2010_intro"
 fsm                = AgentHSM:new{name=name, debug=true, start="START", recover_state="RECOVER"}
 depends_skills     = {"say", "pose_goto", "pose_fromto", "reset_arms"}
 depends_topics     = {
-   { v="doorbell", name="/callbutton",              type="std_msgs/Byte" }
+   { v="doorbell", name="/callbutton",              type="std_msgs/Byte" },
+   { v="envlock",  name="/manipulation/env/locked", type="std_msgs/Bool", latching=true },
 }
 
 documentation      = [==[Intel Open House 2010.
