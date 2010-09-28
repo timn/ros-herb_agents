@@ -43,17 +43,22 @@ local Skill = AgentSkillExecJumpState
 
 -- text constants for better readability of HSM
 TEXT_GREET="Hello, I am HERB, the home exploring robot buttler. "..
+   "Welcome to my home, Intel Labs Pittsburgh. "..
    "Let me tell you a little about myself."
-TEXT_ARM="I have two arms with seven degrees of freedom each. Planning "..
-   "my motion is tough work, but I am quite good at it."
-TEXT_HAND="These are my four degree of freedom hands."
-TEXT_3DLASER="I use a 3D laser to perceive the environment and avoid unknown objects."
-TEXT_PROSILICA="I recognize objects with this camera."
-TEXT_OBLASER="My laser scannar helps me to avoid, obstacles while driving."
-TEXT_GUTS="I have twelve, intel processors for motion planning, navigation, and vision"
+TEXT_ARM="I have two Barrett arms with seven degrees of freedom each. "..
+   "Unlike humans, I need to think long and hard before I move, to make sure I don't hit myself. "..
+   "Finding motions that avoid all these obstacles is tough work, but I am quite good at it."
+TEXT_HAND="These are my four degree of freedom hands."..
+   "My three fingers allow me to grasp all sorts of objects that I find around my kitchen."
+TEXT_3DLASER="I use a 3D laser to perceive the environment and avoid unknown objects."..
+   "This allows me, for example, to know that you are around. "
+TEXT_PROSILICA="This camera is the closest thing I have to eyes. "..
+   "Using it, I have trained to recognize certain objects. "
+TEXT_GUTS="I have twelve, intel cores for motion planning, navigation, vision, and behavior control."..
+   "Last but not least, this is also my segway RMP, with which I drive around."
 TEXT_SEGWAY="I use a segway to move around."
 TEXT_MOVEMENT="I can drive quite fast, but I usually don't, because it might scare you."
-TEXT_GOODBYE="Now let me dazzle you, with my ability to serve drinks."
+TEXT_GOODBYE="Later I will dazzle you, with my ability to serve drinks."
 
 
 -- Setup FSM
@@ -100,7 +105,7 @@ fsm:define_states{ export_to=_M,
 }
 
 fsm:add_transitions{
-   {"START", "GREET", "#doorbell.messages > 0"},
+   {"START", "GREET", true},-- "#doorbell.messages > 0"},
    {"RECOVER", "START", timeout=5},
    {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
 }
