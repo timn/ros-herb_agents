@@ -27,7 +27,6 @@ name               = "IOH2010"
 fsm                = AgentHSM:new{name=name, debug=true, start="START", recover_state="RECOVER"}
 depends_skills     = {"grab", "lockenv", "releasenv", "pickup", "handoff", "turn", "take", "give"}
 depends_topics     = {
-   { v="doorbell", name="/callbutton",               type="std_msgs/Byte" },
    { v="objects",  name="/manipulation/obj_list",    type="manipulationapplet/ObjectActions", latching=true },
    { v="envlock",  name="/manipulation/env/locked",  type="std_msgs/Bool", latching=true },
    { v="grabbed",  name="/manipulation/grabbed_obj", type="manipulationapplet/GrabbedObjects", latching=true },
@@ -46,6 +45,7 @@ local TAKE_SIDE="left"
 
 local Skill = AgentSkillExecJumpState
 local utils = require("herb_agents.utils")
+local preds = require("herb_agents.predicates.general")
 
 
 TEXTS_HANDOFF = {"Here is your drink, please take it.", "Here you are, please take the drink.",
@@ -68,7 +68,7 @@ TEXTS_PUT_RECYCLE = {"Saving the world, one bottle at a time.",
 
 -- Setup FSM
 fsm:define_states{ export_to=_M,
-   closure={doorbell=doorbell, envlock=envlock},
+   closure={envlock=envlock, p=preds},
    {"START", JumpState},
    {"FINAL", JumpState},
    {"FAILED", JumpState},
@@ -178,8 +178,8 @@ fsm:define_states{ export_to=_M,
 }
 
 fsm:add_transitions{
-   {"START", QUICKJUMP or "GRAB_ANNOUNCE", "#doorbell.messages > 0"},
-   {"FINAL", "START", "#doorbell.messages > 0"},
+   {"START", QUICKJUMP or "GRAB_ANNOUNCE", "p.start_button"},
+   {"FINAL", "START", "p.start_button"},
    {"FINAL", "GRAB_ANNOUNCE", timeout=5},
    {"GRAB", "OBJECT_NOT_VISIBLE", "self.error == 'object not visible'"},
    --{"WAIT_OBJECT", "GRAB", "vars.found_object"},
@@ -196,7 +196,7 @@ fsm:add_transitions{
    {"WAIT_RECYCLE", "PUT_RECYCLE", timeout=5},
    {"RECOVER", "START", timeout=5},
    {"RECOVER", "RECOVER_RELEASE", "#envlock.messages > 0 and envlock.messages[1].values.data", precond_only=true},
-   {"FAILED", "FAILED_GOINITIAL_LEFT", "#doorbell.messages > 0"},
+   {"FAILED", "FAILED_GOINITIAL_LEFT", "p.start_button"},
 }
 
 function random_text(texts)
