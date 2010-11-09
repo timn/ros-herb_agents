@@ -1,22 +1,12 @@
 ----------------------------------------------------------------------------
---  skillqueue.lua - Skill queue for agents
+--  utils.lua - Herb agent utilities
 --
---  Created: Fri Jan 02 16:31:14 2009
---  Copyright  2008-2009  Tim Niemueller [http://www.niemueller.de]
---
+--  Created: Mon Sep 13 12:06:59 2010
+--  License: BSD, cf. LICENSE file
+--  Copyright  2010  Tim Niemueller [www.niemueller.de]
+--             2010  Carnegie Mellon University
+--             2010  Intel Labs Pittsburgh
 ----------------------------------------------------------------------------
-
---  This program is free software; you can redistribute it and/or modify
---  it under the terms of the GNU General Public License as published by
---  the Free Software Foundation; either version 2 of the License, or
---  (at your option) any later version.
---
---  This program is distributed in the hope that it will be useful,
---  but WITHOUT ANY WARRANTY; without even the implied warranty of
---  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
---  GNU Library General Public License for more details.
---
---  Read the full text in the LICENSE.GPL file in the doc directory.
 
 require("fawkes.modinit")
 
