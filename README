@@ -1,0 +1,13 @@
+
+herb_agents: HERB-specific high-level agents
+============================================
+
+This package provides the set of agents initially available for HERB, the
+Home Exploring Robot Butler at Intel Labs Pittsburgh.
+
+Although the set of skills might not be immediately useful for other robots,
+because if addresses the specific HERB components, it might still serve as a
+useful example if you are new to the behavior engine.
+
+The agents must be executed in the environment created by luaagent.
+
