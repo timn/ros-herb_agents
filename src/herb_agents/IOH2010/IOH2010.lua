@@ -150,7 +150,7 @@ fsm:define_states{ export_to=_M,
       --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
    --   final_state="TURN_RIGHT_COUNTER2_POST", failure_state="TURN_RIGHT_COUNTER2_POST"},
    {"PLACE_FULL", Skill,
-      skills={{"place", side=TAKE_SIDE, object_id="tabletop"},
+      skills={{"place", side=TAKE_SIDE, object_id="tabletop1"},
 	      {"say", text="Full bottle, putting back on the table!"}},
       --final_state="RETRACT_ARM_HANDOFF", failure_state="TURN_LEFT_STATION1_PLACE"},
       final_state="GOINITIAL_FULL", failure_state="FAILED_RELAX_LEFT"},
@@ -290,7 +290,7 @@ function UNKNOWN_WEIGHT:init()
 end
 
 --function PLACE_FULL:init()
---   self.skills[1].args = {side=self.fsm.vars.side, object_id="tabletop"}
+--   self.skills[1].args = {side=self.fsm.vars.side, object_id="tabletop1"}
 --end
 
 function PUT_RECYCLE:init()
