@@ -1,0 +1,3 @@
+<launch>
+  <node name="SortingDemoAgent" pkg="luaagent" type="luaagent" args="herb_agents.SortingDemo.SortingDemo" respawn="false" output="screen" />
+</launch>
