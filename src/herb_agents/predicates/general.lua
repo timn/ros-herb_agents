@@ -11,6 +11,14 @@
 ------------------------------------------------------------------------
 
 local predlib = require("fawkes.predlib")
+local os = os
+local math = math
+local pairs = pairs
+local type = type
+local print = print
+local tostring = tostring
+local print_info = print_info
+local print_debug = print_debug
 
 --- This module provides generic predicates.
 -- @author Tim Niemueller

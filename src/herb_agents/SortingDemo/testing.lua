@@ -41,13 +41,14 @@ fsm:add_transitions{
 }
 
 function FINAL:init()
-  print_info("%s = %q", "obj_preds.held_object_belongs_in_human_bin", tostring(obj_preds.held_object_belongs_in_human_bin))
-  print_info("%s = %q", "obj_preds.human_near_table", tostring(obj_preds.human_near_table))
+  print "*************************************"
   print_info("%s = %q", "obj_preds.human_tracking_working", tostring(obj_preds.human_tracking_working))
+  print_info("%s = %q", "obj_preds.human_near_table", tostring(obj_preds.human_near_table))
   print_info("%s = %q", "obj_preds.objects_on_table", tostring(obj_preds.objects_on_table))
   print_info("%s = %q", "obj_preds.human_holding_object", tostring(obj_preds.human_holding_object))
   print_info("%s = %q", "obj_preds.human_offering_object", tostring(obj_preds.human_offering_object))
   print_info("%s = %q", "obj_preds.held_object_belongs_in_robot_bin", tostring(obj_preds.held_object_belongs_in_robot_bin))
+  print_info("%s = %q", "obj_preds.held_object_belongs_in_human_bin", tostring(obj_preds.held_object_belongs_in_human_bin))
 end
 
 
