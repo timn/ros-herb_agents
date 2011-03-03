@@ -31,7 +31,7 @@ local Skill = AgentSkillExecJumpState
 fsm:define_states{ export_to=_M,
   closure={p=preds, op=obj_preds},
   {"START", JumpState},
-  {"TAKE_HANDOFF", Skill, skills={{"ft_take"}}, 
+  {"TAKE_HANDOFF", Skill, skills={{"ft_take", side="right"}}, 
           final_state="FINAL", 
           failure_state="FAILED"},
   {"FINAL", JumpState},
@@ -39,10 +39,10 @@ fsm:define_states{ export_to=_M,
 }
 
 fsm:add_transitions{
---  {"START", "FINAL", "not op.human_offering_object"},
---  {"START", "TAKE_HANDOFF", "op.human_offering_object"},
+  {"START", "FINAL", "not op.human_offering_object"},
+  {"START", "TAKE_HANDOFF", "op.human_offering_object"},
 
-  {"START", "FINAL", "p.HRI_no"},
-  {"START", "TAKE_HANDOFF", "p.HRI_yes"},
+--  {"START", "FINAL", "p.HRI_no"},
+--  {"START", "TAKE_HANDOFF", "p.HRI_yes"},
 }
 

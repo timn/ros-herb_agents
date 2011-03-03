@@ -11,7 +11,6 @@
 ------------------------------------------------------------------------
 
 local predlib = require("fawkes.predlib")
-local math=math
 
 --- This module provides generic predicates.
 -- @author Tim Niemueller

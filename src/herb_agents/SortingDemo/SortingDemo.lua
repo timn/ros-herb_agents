@@ -25,7 +25,7 @@ agentenv.agent_module(...)
 
 
 TIMEOUT_INDIFFERENCE = 10
-INSTRUCTINS = "I will say the instructions here."
+INSTRUCTIONS = "Lets collaborate to put these items where they belong. If you are familiar with this task, you may press the button and we can begin. The pop tarts belong in my bin. The fuze bottles belong in your bin. I will need you to pass me pop tarts that are out of my reach. Likewise, I will pass you fuze bottles that are near me."
 
 local preds = require("herb_agents.predicates.general")
 local obj_preds = require("herb_agents.predicates.obj_tracking_preds")
@@ -63,18 +63,19 @@ fsm:define_states{ export_to=_M,
 fsm:add_transitions{
   {"START", "GOTO_TABLE", "p.start_button"},
   {"FINAL", "GOTO_TABLE", "true"},
---  {"WAIT_FOR_HUMAN", "INIT_HUMAN_TRACKER", "op.human_near_table"},
---  {"INIT_HUMAN_TRACKER", "INSTRUCTIONS", "op.human_tracking_working"},
---  {"SORT_LOOP", "SORT", "op.objects_on_table"},
---  {"SORT_LOOP", "FINAL", "not op.objects_on_table and not op.human_holding_object"},
---  {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},
---  {"SORT_LOOP", "GOTO_TABLE", "not op.human_near_table or not op.human_tracking_working"},
+  {"WAIT_FOR_HUMAN", "INIT_HUMAN_TRACKER", "op.human_near_table"},
+  {"INIT_HUMAN_TRACKER", "INSTRUCTIONS", "op.human_tracking_working"},
+  {"INSTRUCTIONS", "SORT", "p.HRI_yes"},
+  {"SORT_LOOP", "SORT", "op.objects_on_table"},
+  {"SORT_LOOP", "FINAL", "not op.objects_on_table and not op.human_holding_object"},
+  {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},
+  {"SORT_LOOP", "GOTO_TABLE", "not op.human_near_table or not op.human_tracking_working"},
 
-  {"WAIT_FOR_HUMAN", "INIT_HUMAN_TRACKER", "p.HRI_yes"},
-  {"INIT_HUMAN_TRACKER", "INSTRUCTIONS", "p.HRI_yes"},
-  {"SORT_LOOP", "SORT", "p.HRI_yes"},
-  {"SORT_LOOP", "FINAL", "p.HRI_no"},
-  {"SORT_LOOP", "TAKE_HANDOFF", "p.start_button"},
-  {"SORT_LOOP", "GOTO_TABLE", "false"},
+--  {"WAIT_FOR_HUMAN", "INIT_HUMAN_TRACKER", "p.HRI_yes"},
+--  {"INIT_HUMAN_TRACKER", "INSTRUCTIONS", "p.HRI_yes"},
+--  {"SORT_LOOP", "SORT", "p.HRI_yes"},
+--  {"SORT_LOOP", "FINAL", "p.HRI_no"},
+--  {"SORT_LOOP", "TAKE_HANDOFF", "p.start_button"},
+--  {"SORT_LOOP", "GOTO_TABLE", "false"},
 }
 
