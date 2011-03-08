@@ -65,7 +65,7 @@ fsm:add_transitions{
   {"FINAL", "GOTO_TABLE", "true"},
   {"WAIT_FOR_HUMAN", "INIT_HUMAN_TRACKER", "op.human_near_table"},
   {"INIT_HUMAN_TRACKER", "INSTRUCTIONS", "op.human_tracking_working"},
-  {"INSTRUCTIONS", "SORT", "p.HRI_yes"},
+  {"INSTRUCTIONS", "SORT", "p.HRI_yes or p.start_button"},
   {"SORT_LOOP", "SORT", "op.objects_on_table"},
   {"SORT_LOOP", "FINAL", "not op.objects_on_table and not op.human_holding_object"},
   {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},

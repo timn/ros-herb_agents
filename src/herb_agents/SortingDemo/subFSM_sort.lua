@@ -56,10 +56,10 @@ fsm:define_states{ export_to=_M,
 }
 
 fsm:add_transitions{
-  {"START", "CHOOSE_OBJECT", "op.objects_on_table and not op.holding_object"},
+  {"START", "CHOOSE_OBJECT", "op.objects_on_table and not op.HERB_holding_object"},
   {"CHOOSE_OBJECT", "PICKUP_OBJECT", "true"},
-  {"START", "CLASSIFY_OBJECT", "op.holding_object"},
-  {"START", "FINAL", "not op.objects_on_table and not op.holding_object"},
+  {"START", "CLASSIFY_OBJECT", "op.HERB_holding_object"},
+  {"START", "FINAL", "not op.objects_on_table and not op.HERB_holding_object"},
   {"SORT", "HANDOFF_TO_HUMAN", "op.held_object_belongs_in_human_bin"},
   {"SORT", "PLACE_INTO_BIN", "op.held_object_belongs_in_robot_bin"},
   {"SORT", "PLACE_ON_TABLE", "not (op.held_object_belongs_in_robot_bin or op.held_object_belongs_in_human_bin)"},

@@ -31,7 +31,7 @@ local Skill = AgentSkillExecJumpState
 fsm:define_states{ export_to=_M,
   closure={p=preds, op=obj_preds},
   {"START", JumpState},
-  {"TAKE_HANDOFF", Skill, skills={{"ft_take", side="right"}}, 
+  {"TAKE_HANDOFF", Skill, skills={{"take_at_tm", side="right", T="[0,1,0,0,0,-1,-1,0,0,0.57,-1.83,1.175]"}}, 
           final_state="FINAL", 
           failure_state="FAILED"},
   {"FINAL", JumpState},
