@@ -120,11 +120,23 @@ function human_holding_object()
 end
 
 -- Check if HERB has an object in his left hand
-function HERB_holding_object()
+function HERB_holding_object_in_left_hand()
    if #grabbed.messages > 0 then
       local m = grabbed.messages[#grabbed.messages] -- only check most recent
       print_debug("Comparing %s to 'none'", m.values.left_object_id)
       if m.values.left_object_id:match("none") == false then
+        return true
+      end
+   end
+   return false
+end
+
+-- Check if HERB has an object in his left hand
+function HERB_holding_object_in_right_hand()
+   if #grabbed.messages > 0 then
+      local m = grabbed.messages[#grabbed.messages] -- only check most recent
+      print_debug("Comparing %s to 'none'", m.values.right_object_id)
+      if m.values.right_object_id:match("none") == false then
         return true
       end
    end
