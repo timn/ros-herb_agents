@@ -46,7 +46,7 @@ local WORLD_FRAME_ID = "/openrave"
 local HUMAN_HAND_FRAME_ID_BASE = "human_left_hand"
 local HERB_LEFT_HAND_FRAME_ID = "/left/wam7"
 local HERB_RIGHT_HAND_FRAME_ID = "/right/wam7"
-local TRACKING_TIMEOUT_SECS = 2
+local TRACKING_TIMEOUT_SECS = 4
 local ROBOT_BIN_OBJECT_PATTERN = "poptarts[%d]*"
 local HUMAN_BIN_OBJECT_PATTERN = "fuze_bottle[%d]*"
 
@@ -119,30 +119,6 @@ function human_holding_object()
   return true --assume human is always holding object
 end
 
--- Check if HERB has an object in his left hand
-function HERB_holding_object_in_left_hand()
-   if #grabbed.messages > 0 then
-      local m = grabbed.messages[#grabbed.messages] -- only check most recent
-      print_debug("Comparing %s to 'none'", m.values.left_object_id)
-      if m.values.left_object_id:match("none") == false then
-        return true
-      end
-   end
-   return false
-end
-
--- Check if HERB has an object in his left hand
-function HERB_holding_object_in_right_hand()
-   if #grabbed.messages > 0 then
-      local m = grabbed.messages[#grabbed.messages] -- only check most recent
-      print_debug("Comparing %s to 'none'", m.values.right_object_id)
-      if m.values.right_object_id:match("none") == false then
-        return true
-      end
-   end
-   return false
-end
-
 function human_offering_object()
   if human_tracking_working == true and human_holding_object == true then
     if #hand_off_byte.messages > 0 then
@@ -155,9 +131,42 @@ function human_offering_object()
   return false
 end
 
+-- Check if HERB has an object
+function HERB_holding_object()
+   return (HERB_holding_object_in_left_hand or HERB_holding_object_in_left_hand)
+end
+
+-- Check if HERB has an object in his left hand
+function HERB_holding_object_in_left_hand()
+   if #grabbed.messages > 0 then
+      local m = grabbed.messages[#grabbed.messages] -- only check most recent
+      print_debug("Comparing %s to 'none'", m.values.left_object_id)
+      if not m.values.left_object_id:match("none") then
+        return true
+      end
+   end
+   return false
+end
+
+-- Check if HERB has an object in his left hand
+function HERB_holding_object_in_right_hand()
+   if #grabbed.messages > 0 then
+      local m = grabbed.messages[#grabbed.messages] -- only check most recent
+      print_debug("Comparing %s to 'none'", m.values.right_object_id)
+      if not m.values.right_object_id:match("none") then
+        return true
+      end
+   end
+   return false
+end
+
+-- Check if the object in the left hand belongs in the either bin
+function left_held_object_unsortable()
+   return not (left_held_object_belongs_in_robot_bin or left_held_object_belongs_in_human_bin)
+end
 
 -- Check if the object in the left hand belongs in the robot bin
-function held_object_belongs_in_robot_bin()
+function left_held_object_belongs_in_robot_bin()
    if #grabbed.messages > 0 then
       local m = grabbed.messages[#grabbed.messages] -- only check most recent
       print_debug("Comparing %s to %s", m.values.left_object_id, ROBOT_BIN_OBJECT_PATTERN)
@@ -169,11 +178,40 @@ function held_object_belongs_in_robot_bin()
 end
 
 -- Check if the object in the left hand belongs in the human bin
-function held_object_belongs_in_human_bin()
+function left_held_object_belongs_in_human_bin()
    if #grabbed.messages > 0 then
       local m = grabbed.messages[#grabbed.messages] -- only check most recent
       print_debug("Comparing %s to %s", m.values.left_object_id, HUMAN_BIN_OBJECT_PATTERN)
       if m.values.left_object_id:match(HUMAN_BIN_OBJECT_PATTERN) then
+        return true
+      end
+   end
+   return false
+end
+
+-- Check if the object in the right hand belongs in the either bin
+function right_held_object_unsortable()
+   return not (right_held_object_belongs_in_robot_bin or right_held_object_belongs_in_human_bin)
+end
+
+-- Check if the object in the right hand belongs in the robot bin
+function right_held_object_belongs_in_robot_bin()
+   if #grabbed.messages > 0 then
+      local m = grabbed.messages[#grabbed.messages] -- only check most recent
+      print_debug("Comparing %s to %s", m.values.right_object_id, ROBOT_BIN_OBJECT_PATTERN)
+      if m.values.right_object_id:match(ROBOT_BIN_OBJECT_PATTERN) then
+        return true
+      end
+   end
+   return false
+end
+
+-- Check if the object in the right hand belongs in the human bin
+function right_held_object_belongs_in_human_bin()
+   if #grabbed.messages > 0 then
+      local m = grabbed.messages[#grabbed.messages] -- only check most recent
+      print_debug("Comparing %s to %s", m.values.right_object_id, HUMAN_BIN_OBJECT_PATTERN)
+      if m.values.right_object_id:match(HUMAN_BIN_OBJECT_PATTERN) then
         return true
       end
    end

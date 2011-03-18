@@ -25,7 +25,7 @@ agentenv.agent_module(...)
 
 
 TIMEOUT_INDIFFERENCE = 10
-INSTRUCTIONS = "Lets collaborate to put these items where they belong. The fuze bottles belong in your bin. I will need you to pass me pop tarts that are out of my reach. Likewise, I will pass you fuze bottles that are near me."
+INSTRUCTIONS =  "Instructions. asdfasdf." --"Lets collaborate to put these items where they belong. The fuze bottles belong in your bin. I will need you to pass me pop tarts that are out of my reach. Likewise, I will pass you fuze bottles that are near me."
 
 local preds = require("herb_agents.predicates.general")
 local obj_preds = require("herb_agents.predicates.obj_tracking_preds")
@@ -46,8 +46,8 @@ fsm:define_states{ export_to=_M,
           final_state="RESET", 
           failure_state="RESET"},
   {"INSTRUCTIONS",Skill, skills={{"say", text=INSTRUCTIONS}}, 
-          final_state="SORT", 
-          failure_state="SORT"},
+          final_state="SORT_LOOP", 
+          failure_state="SORT_LOOP"},
   {"SORT",SubFSM, subfsm=subFSM_sort.fsm, 
           exit_to="SORT_LOOP", 
           fail_to="SORT_LOOP"},
@@ -58,14 +58,38 @@ fsm:define_states{ export_to=_M,
 }
 
 fsm:add_transitions{
+  {"START", "START", timeout=1},
   {"START", "RESET", "p.start_button"},
   {"FINAL", "RESET", "p.start_button"},
-  {"RESET", "WAIT_FOR_HUMAN", timeout=10},
+  {"RESET", "WAIT_FOR_HUMAN", timeout=20},
   {"RESET", "INSTRUCTIONS", "op.human_near_table"},
-  {"INSTRUCTIONS", "SORT", "p.HRI_yes or p.start_button"},
+  {"RESET", "SORT_LOOP", "p.HRI_yes"},
+  {"INSTRUCTIONS", "SORT_LOOP", "p.HRI_yes or p.start_button"},
   {"SORT_LOOP", "SORT", "op.objects_on_table"},
-  {"SORT_LOOP", "FINAL", "not op.objects_on_table and not op.human_holding_object"},
-  {"SORT", "TAKE_HANDOFF", "op.human_offering_object"},
-  {"SORT_LOOP", "RESET", "not op.human_near_table or not op.human_tracking_working"},
+  {"SORT_LOOP", "FINAL", "(not op.objects_on_table) and (not op.human_holding_object)"},
+  {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},
+  {"SORT_LOOP", "RESET", "(not op.human_near_table) or (not op.human_tracking_working)"},
 }
+
+
+function START:init()
+  print_debug("*************************************")
+  print_debug("%s = %q", "preds.start_button", tostring(preds.start_button))
+  print_debug("%s = %q", "preds.HRI_yes", tostring(preds.HRI_yes))
+  print_debug("%s = %q", "preds.HRI_no", tostring(preds.HRI_no))
+  print_debug("%s = %q", "obj_preds.human_tracking_working", tostring(obj_preds.human_tracking_working))
+  print_debug("%s = %q", "obj_preds.human_near_table", tostring(obj_preds.human_near_table))
+  print_debug("%s = %q", "obj_preds.objects_on_table", tostring(obj_preds.objects_on_table))
+  print_debug("%s = %q", "obj_preds.human_holding_object", tostring(obj_preds.human_holding_object))
+  print_debug("%s = %q", "obj_preds.human_offering_object", tostring(obj_preds.human_offering_object))
+  print_debug("%s = %q", "obj_preds.HERB_holding_object", tostring(obj_preds.HERB_holding_object))
+  print_debug("%s = %q", "obj_preds.HERB_holding_object_in_left_hand", tostring(obj_preds.HERB_holding_object_in_left_hand))
+  print_debug("%s = %q", "obj_preds.HERB_holding_object_in_right_hand", tostring(obj_preds.HERB_holding_object_in_right_hand))
+  print_debug("%s = %q", "obj_preds.left_held_object_unsortable", tostring(obj_preds.left_held_object_unsortable))
+  print_debug("%s = %q", "obj_preds.left_held_object_belongs_in_robot_bin", tostring(obj_preds.left_held_object_belongs_in_robot_bin))
+  print_debug("%s = %q", "obj_preds.left_held_object_belongs_in_human_bin", tostring(obj_preds.left_held_object_belongs_in_human_bin))
+  print_debug("%s = %q", "obj_preds.right_held_object_unsortable", tostring(obj_preds.right_held_object_unsortable))
+  print_debug("%s = %q", "obj_preds.right_held_object_belongs_in_robot_bin", tostring(obj_preds.right_held_object_belongs_in_robot_bin))
+  print_debug("%s = %q", "obj_preds.right_held_object_belongs_in_human_bin", tostring(obj_preds.right_held_object_belongs_in_human_bin))
+end
 

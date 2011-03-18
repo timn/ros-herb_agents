@@ -33,10 +33,12 @@ local Skill = AgentSkillExecJumpState
 fsm:define_states{ export_to=_M,
   closure={p=preds, op=obj_preds},
   {"START", JumpState},
-  {"PLACE_RIGHT",Skill, skills={{"place", side="right", object_id=TABLETOP_NAME}}, 
+  {"PLACE_RIGHT",Skill, skills={{"say", text="Please wait while I set this on the table."},
+                                {"place", side="right", object_id=TABLETOP_NAME}}, 
           final_state="TAKE_HANDOFF", 
           failure_state="FAILED"},
-  {"TAKE_HANDOFF", Skill, skills={{"take_at_tm", side="right", T="[0,1,0,0,0,-1,-1,0,0,0.57,-1.83,1.175]"}}, 
+  {"TAKE_HANDOFF", Skill, skills={{"say", text="I am going to take what you are holding. Be careful."},
+                                  {"take_at_tm", side="right", T="[0,1,0,0,0,-1,-1,0,0,0.57,-1.83,1.175]", exec_timelimit=10}}, 
           final_state="CHECK_LEFT_HAND", 
           failure_state="FAILED"},
   {"CHECK_LEFT_HAND", JumpState},
@@ -52,8 +54,8 @@ fsm:define_states{ export_to=_M,
 
 fsm:add_transitions{
   {"START", "PLACE_RIGHT", "op.HERB_holding_object_in_right_hand"},
-  {"START", "TAKE_HANDOFF", "not op.HERB_holding_object_in_right_hand"},
-  {"CHECK_LEFT_HAND", "SWITCH_HANDS", "not op.HERB_holding_object_in_left_hand"},
+  {"START", "TAKE_HANDOFF", "(not op.HERB_holding_object_in_right_hand)"},
+  {"CHECK_LEFT_HAND", "SWITCH_HANDS", "(not op.HERB_holding_object_in_left_hand)"},
   {"CHECK_LEFT_HAND", "PLACE_LEFT", "op.HERB_holding_object_in_left_hand"},
 }
 
