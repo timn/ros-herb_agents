@@ -32,23 +32,33 @@ local SubFSM = SubFSMJumpState
 fsm:define_states{ export_to=_M,
   closure={p=preds, op=obj_preds, TIMEOUT_INDIFFERENCE=TIMEOUT_INDIFFERENCE},
   {"START", JumpState},
+  {"LOOP", JumpState},
   {"FINAL", JumpState},
 }
 
 fsm:add_transitions{
-  {"START", "FINAL", timeout=2},
-  {"FINAL", "START", true},
+  {"START", "LOOP", "p.start_button or p.HRI_yes or p.HRI_no"},
+  {"START", "LOOP", timeout=2},
+  {"LOOP", "START", timeout=2},
 }
 
-function FINAL:init()
-  print "*************************************"
-  print_info("%s = %q", "obj_preds.human_tracking_working", tostring(obj_preds.human_tracking_working))
-  print_info("%s = %q", "obj_preds.human_near_table", tostring(obj_preds.human_near_table))
-  print_info("%s = %q", "obj_preds.objects_on_table", tostring(obj_preds.objects_on_table))
-  print_info("%s = %q", "obj_preds.human_holding_object", tostring(obj_preds.human_holding_object))
-  print_info("%s = %q", "obj_preds.human_offering_object", tostring(obj_preds.human_offering_object))
-  print_info("%s = %q", "obj_preds.held_object_belongs_in_robot_bin", tostring(obj_preds.held_object_belongs_in_robot_bin))
-  print_info("%s = %q", "obj_preds.held_object_belongs_in_human_bin", tostring(obj_preds.held_object_belongs_in_human_bin))
+function START:init()
+  print_debug("*************************************")
+  print_debug("%s = %q", "obj_preds.human_tracking_working", tostring(obj_preds.human_tracking_working))
+  print_debug("%s = %q", "obj_preds.human_near_table", tostring(obj_preds.human_near_table))
+  print_debug("%s = %q", "obj_preds.objects_on_table", tostring(obj_preds.objects_on_table))
+  print_debug("%s = %q", "obj_preds.human_holding_object", tostring(obj_preds.human_holding_object))
+  print_debug("%s = %q", "obj_preds.human_offering_object", tostring(obj_preds.human_offering_object))
+  print_debug("%s = %q", "obj_preds.HERB_holding_object", tostring(obj_preds.HERB_holding_object))
+  print_debug("%s = %q", "obj_preds.HERB_holding_object_in_left_hand", tostring(obj_preds.HERB_holding_object_in_left_hand))
+  print_debug("%s = %q", "obj_preds.HERB_holding_object_in_right_hand", tostring(obj_preds.HERB_holding_object_in_right_hand))
+  print_debug("%s = %q", "obj_preds.left_held_object_unsortable", tostring(obj_preds.left_held_object_unsortable))
+  print_debug("%s = %q", "obj_preds.left_held_object_belongs_in_robot_bin", tostring(obj_preds.left_held_object_belongs_in_robot_bin))
+  print_debug("%s = %q", "obj_preds.left_held_object_belongs_in_human_bin", tostring(obj_preds.left_held_object_belongs_in_human_bin))
+  print_debug("%s = %q", "obj_preds.right_held_object_unsortable", tostring(obj_preds.right_held_object_unsortable))
+  print_debug("%s = %q", "obj_preds.right_held_object_belongs_in_robot_bin", tostring(obj_preds.right_held_object_belongs_in_robot_bin))
+  print_debug("%s = %q", "obj_preds.right_held_object_belongs_in_human_bin", tostring(obj_preds.right_held_object_belongs_in_human_bin))
 end
 
+FINAL.init = START.init
 

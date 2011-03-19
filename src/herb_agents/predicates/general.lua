@@ -19,6 +19,8 @@ local print = print
 local tostring = tostring
 local print_info = print_info
 local print_debug = print_debug
+local roslua = roslua
+local string = string
 
 --- This module provides generic predicates.
 -- @author Tim Niemueller
@@ -39,27 +41,30 @@ local DOORBELL_START_NUM = 4
 function start_button()
    if #callbutton.messages > 0 then
       local m = callbutton.messages[#callbutton.messages]
+      --print_debug("%s: %d messages; most recent: data = %d","start_button",#callbutton.messages,m.values.data)
       return m.values.data == DOORBELL_START_NUM
    end
-
+   --print_debug("%s: no messages","start_button")
    return false
 end
 
 function HRI_yes()
    if #callbutton.messages > 0 then
       local m = callbutton.messages[#callbutton.messages]
+      --print_debug("%s: %d messages; most recent: data = %d","HRI_yes",#callbutton.messages,m.values.data)
       return m.values.data == HRI_YES_NUM
    end
-
+   --print_debug("%s: no messages","HRI_yes")
    return false
 end
 
 function HRI_no()
    if #callbutton.messages > 0 then
       local m = callbutton.messages[#callbutton.messages]
+      --print_debug("%s: %d messages; most recent: data = %d","HRI_no",#callbutton.messages,m.values.data)
       return m.values.data == HRI_NO_NUM
    end
-
+   --print_debug("%s: no messages","HRI_no")
    return false
 end
 

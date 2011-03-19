@@ -41,6 +41,9 @@ fsm:define_states{ export_to=_M,
   closure={p=preds, op=obj_preds, TIMEOUT_INDIFFERENCE=TIMEOUT_INDIFFERENCE},
   {"START", JumpState},
   {"FINAL", JumpState},
+  {"GO_INITIAL",Skill, skills={{"goinitial",side="left"},{"goinitial",side="right"}}, 
+          final_state="RESET", 
+          failure_state="GO_INITIAL"},
   {"RESET", JumpState},
   {"WAIT_FOR_HUMAN",Skill, skills={{"say", text="I am waiting for some help."}}, 
           final_state="RESET", 
@@ -59,24 +62,21 @@ fsm:define_states{ export_to=_M,
 
 fsm:add_transitions{
   {"START", "START", timeout=1},
-  {"START", "RESET", "p.start_button"},
-  {"FINAL", "RESET", "p.start_button"},
+  {"START", "GO_INITIAL", "p.start_button"},
+  {"FINAL", "GO_INITIAL", "p.start_button"},
   {"RESET", "WAIT_FOR_HUMAN", timeout=20},
   {"RESET", "INSTRUCTIONS", "op.human_near_table"},
   {"RESET", "SORT_LOOP", "p.HRI_yes"},
   {"INSTRUCTIONS", "SORT_LOOP", "p.HRI_yes or p.start_button"},
   {"SORT_LOOP", "SORT", "op.objects_on_table"},
-  {"SORT_LOOP", "FINAL", "(not op.objects_on_table) and (not op.human_holding_object)"},
+  {"SORT_LOOP", "RESET", "(not op.human_tracking_working) or (not op.human_near_table)"},
   {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},
-  {"SORT_LOOP", "RESET", "(not op.human_near_table) or (not op.human_tracking_working)"},
+  {"SORT_LOOP", "FINAL", "(not op.objects_on_table) and (not op.human_holding_object)"},
 }
 
 
 function START:init()
   print_debug("*************************************")
-  print_debug("%s = %q", "preds.start_button", tostring(preds.start_button))
-  print_debug("%s = %q", "preds.HRI_yes", tostring(preds.HRI_yes))
-  print_debug("%s = %q", "preds.HRI_no", tostring(preds.HRI_no))
   print_debug("%s = %q", "obj_preds.human_tracking_working", tostring(obj_preds.human_tracking_working))
   print_debug("%s = %q", "obj_preds.human_near_table", tostring(obj_preds.human_near_table))
   print_debug("%s = %q", "obj_preds.objects_on_table", tostring(obj_preds.objects_on_table))
