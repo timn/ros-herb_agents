@@ -15,7 +15,7 @@ module(..., agentenv.module_init)
 -- Crucial skill information
 name               = "SortingDemo"
 fsm                = AgentHSM:new{name=name, debug=true, start="START"}
-depends_skills     = {}
+depends_skills     = {"reset_arms"}
 depends_topics     = {}
 
 documentation      = [==[Sorting Demo.]==]
@@ -41,9 +41,12 @@ fsm:define_states{ export_to=_M,
   closure={p=preds, op=obj_preds, TIMEOUT_INDIFFERENCE=TIMEOUT_INDIFFERENCE},
   {"START", JumpState},
   {"FINAL", JumpState},
-  {"GO_INITIAL",Skill, skills={{"goinitial",side="left"},{"goinitial",side="right"}}, 
+  {"GO_INITIAL_LEFT",Skill, skills={{"goinitial", side="left"}}, 
+          final_state="GO_INITIAL_RIGHT", 
+          failure_state="GO_INITIAL_LEFT"},
+  {"GO_INITIAL_RIGHT",Skill, skills={{"goinitial", side="right"}}, 
           final_state="RESET", 
-          failure_state="GO_INITIAL"},
+          failure_state="GO_INITIAL_RIGHT"},
   {"RESET", JumpState},
   {"WAIT_FOR_HUMAN",Skill, skills={{"say", text="I am waiting for some help."}}, 
           final_state="RESET", 
@@ -51,10 +54,13 @@ fsm:define_states{ export_to=_M,
   {"INSTRUCTIONS",Skill, skills={{"say", text=INSTRUCTIONS}}, 
           final_state="SORT_LOOP", 
           failure_state="SORT_LOOP"},
+  {"SORT_LOOP",JumpState},
   {"SORT",SubFSM, subfsm=subFSM_sort.fsm, 
           exit_to="SORT_LOOP", 
           fail_to="SORT_LOOP"},
-  {"SORT_LOOP",JumpState},
+  {"INTERUPT",Skill, skills={{"stop_arms"},{"stop_manipapp"},{"stop_arms"}}, 
+          final_state="TAKE_HANDOFF", 
+          failure_state="TAKE_HANDOFF"},
   {"TAKE_HANDOFF",SubFSM, subfsm=subFSM_take_handoff.fsm, 
           exit_to="SORT", 
           fail_to="SORT"},
@@ -62,20 +68,23 @@ fsm:define_states{ export_to=_M,
 
 fsm:add_transitions{
   {"START", "START", timeout=1},
-  {"START", "GO_INITIAL", "p.start_button"},
-  {"FINAL", "GO_INITIAL", "p.start_button"},
+  {"START", "GO_INITIAL_LEFT", "p.start_button"},
+  {"FINAL", "GO_INITIAL_LEFT", "p.start_button"},
   {"RESET", "WAIT_FOR_HUMAN", timeout=20},
   {"RESET", "INSTRUCTIONS", "op.human_near_table"},
   {"RESET", "SORT_LOOP", "p.HRI_yes"},
   {"INSTRUCTIONS", "SORT_LOOP", "p.HRI_yes or p.start_button"},
-  {"SORT_LOOP", "SORT", "op.objects_on_table"},
-  {"SORT_LOOP", "RESET", "(not op.human_tracking_working) or (not op.human_near_table)"},
+  {"SORT_LOOP", "FINAL", "(not op.objects_in_play)"},
+  {"SORT_LOOP", "SORT", "op.objects_on_table or op.HERB_holding_object"},
+  --{"SORT_LOOP", "RESET", "(not op.human_tracking_working) and (not p.HRI_yes)"},
+  --{"SORT_LOOP", "RESET", "(not op.human_near_table) and (not p.HRI_yes)"},
   {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},
-  {"SORT_LOOP", "FINAL", "(not op.objects_on_table) and (not op.human_holding_object)"},
+  {"SORT", "INTERUPT", "op.human_offering_object"},
 }
 
 
 function START:init()
+  self.fsm:reset_trace()
   print_debug("*************************************")
   print_debug("%s = %q", "obj_preds.human_tracking_working", tostring(obj_preds.human_tracking_working))
   print_debug("%s = %q", "obj_preds.human_near_table", tostring(obj_preds.human_near_table))
