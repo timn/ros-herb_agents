@@ -58,7 +58,7 @@ fsm:define_states{ export_to=_M,
   {"SORT",SubFSM, subfsm=subFSM_sort.fsm, 
           exit_to="SORT_LOOP", 
           fail_to="SORT_LOOP"},
-  {"INTERUPT",Skill, skills={{"stop_arms"},{"stop_manipapp"},{"stop_arms"}}, 
+  {"INTERUPT",Skill, skills={{"stop_manipapp"},{"stop_arms"}}, 
           final_state="TAKE_HANDOFF", 
           failure_state="TAKE_HANDOFF"},
   {"TAKE_HANDOFF",SubFSM, subfsm=subFSM_take_handoff.fsm, 
@@ -79,7 +79,7 @@ fsm:add_transitions{
   --{"SORT_LOOP", "RESET", "(not op.human_tracking_working) and (not p.HRI_yes)"},
   --{"SORT_LOOP", "RESET", "(not op.human_near_table) and (not p.HRI_yes)"},
   {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},
-  {"SORT", "INTERUPT", "op.human_offering_object"},
+  {"SORT", "INTERUPT", "op.human_offering_object and false"},
 }
 
 

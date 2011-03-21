@@ -34,6 +34,7 @@ depends_topics = {
   {v="human_near_table_byte", name="/human_near_table_status", type="std_msgs/Byte", latching=true},
   {v="hand_off_byte", name="/human_handoff_status", type="std_msgs/Byte", latching=true},
   { v="grabbed",  name="/manipulation/grabbed_obj", type="newmanipapp/GrabbedObjects", latching=true },
+  { v="objects",  name="/manipulation/obj_list",   type="newmanipapp/ObjectActions", latching=true },
 }
 
 -- Initialize as predicate library
@@ -106,17 +107,24 @@ function objects_on_table()
   if #obj_list.messages > 0 then
     local m = obj_list.messages[#obj_list.messages]
     msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
-    if now_time - msg_time > TRACKING_TIMEOUT_SECS then
-      return false
-    end
-    for i = 1, #m.values.objects do
-      object = m.values.objects[i].values
-      --if object.header.values.frame_id == WORLD_FRAME_ID then
-        --pos = object.pose.values.position.values
-        --if math.abs(pos.z - TABLE_HEIGHT) < 0.05 then
-          return true
+    if now_time - msg_time < TRACKING_TIMEOUT_SECS then
+      for i = 1, #m.values.objects do
+        object = m.values.objects[i].values
+        --if object.header.values.frame_id == WORLD_FRAME_ID then
+          --pos = object.pose.values.position.values
+          --if math.abs(pos.z - TABLE_HEIGHT) < 0.05 then
+            return true
+          --end
         --end
-      --end
+      end
+    end
+  end
+  if #objects.messages > 0 then
+    local m = objects.messages[#objects.messages] -- only check most recent
+    for i,o in pairs(m.values.object_id) do
+      if m.values.poss_act[i] == "grab" then
+        return true
+      end
     end
   end
   return false
@@ -163,9 +171,6 @@ function human_offering_object()
         return false
       end
   --end
-
-    
-  
   if #hand_off_byte.messages > 0 then
     local m = hand_off_byte.messages[#hand_off_byte.messages]
     if m.values.data == HANDOFF_YES_BYTE then
