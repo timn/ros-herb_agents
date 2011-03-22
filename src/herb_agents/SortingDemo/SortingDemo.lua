@@ -15,7 +15,7 @@ module(..., agentenv.module_init)
 -- Crucial skill information
 name               = "SortingDemo"
 fsm                = AgentHSM:new{name=name, debug=true, start="START"}
-depends_skills     = {"reset_arms"}
+depends_skills     = {}
 depends_topics     = {}
 
 documentation      = [==[Sorting Demo.]==]
@@ -25,7 +25,7 @@ agentenv.agent_module(...)
 
 
 TIMEOUT_INDIFFERENCE = 10
-INSTRUCTIONS =  "Instructions. asdfasdf." --"Lets collaborate to put these items where they belong. The fuze bottles belong in your bin. I will need you to pass me pop tarts that are out of my reach. Likewise, I will pass you fuze bottles that are near me."
+INSTRUCTIONS =  "Instructions. i destroy poptarts." --"Lets collaborate to put these items where they belong. The fuze bottles belong in your bin. I will need you to pass me pop tarts that are out of my reach. Likewise, I will pass you fuze bottles that are near me."
 
 local preds = require("herb_agents.predicates.general")
 local obj_preds = require("herb_agents.predicates.obj_tracking_preds")
@@ -41,12 +41,9 @@ fsm:define_states{ export_to=_M,
   closure={p=preds, op=obj_preds, TIMEOUT_INDIFFERENCE=TIMEOUT_INDIFFERENCE},
   {"START", JumpState},
   {"FINAL", JumpState},
-  {"GO_INITIAL_LEFT",Skill, skills={{"goinitial", side="left"}}, 
-          final_state="GO_INITIAL_RIGHT", 
-          failure_state="GO_INITIAL_LEFT"},
-  {"GO_INITIAL_RIGHT",Skill, skills={{"goinitial", side="right"}}, 
+  {"GO_INITIAL",Skill, skills={{"goinitial_both"}}, 
           final_state="RESET", 
-          failure_state="GO_INITIAL_RIGHT"},
+          failure_state="GO_INITIAL"},
   {"RESET", JumpState},
   {"WAIT_FOR_HUMAN",Skill, skills={{"say", text="I am waiting for some help."}}, 
           final_state="RESET", 
@@ -58,7 +55,7 @@ fsm:define_states{ export_to=_M,
   {"SORT",SubFSM, subfsm=subFSM_sort.fsm, 
           exit_to="SORT_LOOP", 
           fail_to="SORT_LOOP"},
-  {"INTERUPT",Skill, skills={{"stop_manipapp"},{"stop_arms"}}, 
+  {"INTERUPT",Skill, skills={{"stop_manipapp"}}, 
           final_state="TAKE_HANDOFF", 
           failure_state="TAKE_HANDOFF"},
   {"TAKE_HANDOFF",SubFSM, subfsm=subFSM_take_handoff.fsm, 
@@ -68,18 +65,18 @@ fsm:define_states{ export_to=_M,
 
 fsm:add_transitions{
   {"START", "START", timeout=1},
-  {"START", "GO_INITIAL_LEFT", "p.start_button"},
-  {"FINAL", "GO_INITIAL_LEFT", "p.start_button"},
+  {"START", "GO_INITIAL", "p.start_button"},
+  {"FINAL", "GO_INITIAL", "p.start_button"},
   {"RESET", "WAIT_FOR_HUMAN", timeout=20},
   {"RESET", "INSTRUCTIONS", "op.human_near_table"},
   {"RESET", "SORT_LOOP", "p.HRI_yes"},
   {"INSTRUCTIONS", "SORT_LOOP", "p.HRI_yes or p.start_button"},
+  {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object or p.start_button"},
   {"SORT_LOOP", "FINAL", "(not op.objects_in_play)"},
   {"SORT_LOOP", "SORT", "op.objects_on_table or op.HERB_holding_object"},
   --{"SORT_LOOP", "RESET", "(not op.human_tracking_working) and (not p.HRI_yes)"},
   --{"SORT_LOOP", "RESET", "(not op.human_near_table) and (not p.HRI_yes)"},
-  {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},
-  {"SORT", "INTERUPT", "op.human_offering_object and false"},
+  {"SORT", "INTERUPT", "op.human_offering_object"},
 }
 
 

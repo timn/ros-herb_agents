@@ -24,7 +24,8 @@ documentation      = [==[Pick an object up and sort it. Either put in a bin or h
 agentenv.agent_module(...)
 
 ROBOT_BIN_NAME = "icebin1"
-TABLETOP_NAME = "tabletop1"
+TABLETOP_NAME_RIGHT = "tabletop1"
+TABLETOP_NAME_LEFT = "tabletop2"
 
 local preds = require("herb_agents.predicates.general")
 local obj_preds = require("herb_agents.predicates.obj_tracking_preds")
@@ -51,7 +52,7 @@ fsm:define_states{ export_to=_M,
           final_state="FINAL", 
           failure_state="FAILED"},
   {"CHECK_RIGHT_HAND", JumpState},
-  {"PLACE_RIGHT",Skill, skills={{"place", side="right", object_id=TABLETOP_NAME}}, 
+  {"PLACE_RIGHT",Skill, skills={{"place", side="right", object_id=TABLETOP_NAME_RIGHT}}, 
           final_state="SWITCH_HANDS_TO_RIGHT", 
           failure_state="FAILED"},
   {"SWITCH_HANDS_TO_RIGHT",Skill, skills={{"handover", side="left"}}, 
@@ -59,7 +60,7 @@ fsm:define_states{ export_to=_M,
           failure_state="FAILED"},
   {"SORT_RIGHT", JumpState},
   {"CHECK_LEFT_HAND", JumpState},
-  {"PLACE_LEFT",Skill, skills={{"place", side="left", object_id=TABLETOP_NAME}}, 
+  {"PLACE_LEFT",Skill, skills={{"place", side="left", object_id=TABLETOP_NAME_LEFT}}, 
           final_state="SWITCH_HANDS_TO_LEFT", 
           failure_state="FAILED"},
   {"SWITCH_HANDS_TO_LEFT",Skill, skills={{"handover", side="right"}}, 
@@ -72,13 +73,13 @@ fsm:define_states{ export_to=_M,
   {"HANDOFF_TO_HUMAN_GIVE",Skill, skills={{"say", text="Please take this."},{"fthandoff", side="right"}}, 
           final_state="FINAL", 
           failure_state="PLACE_ON_TABLE_RIGHT"},
-  {"PLACE_ON_TABLE_LEFT",Skill, skills={{"place", side="left", object_id=TABLETOP_NAME}}, 
+  {"PLACE_ON_TABLE_LEFT",Skill, skills={{"place", side="left", object_id=TABLETOP_NAME_LEFT}}, 
           final_state="PLACE_GO_INITIAL_LEFT", 
           failure_state="FAILED"},
   {"PLACE_GO_INITIAL_LEFT",Skill, skills={{"goinitial",side="left"}}, 
           final_state="FAILED", 
           failure_state="FAILED"},
-  {"PLACE_ON_TABLE_RIGHT",Skill, skills={{"place", side="right", object_id=TABLETOP_NAME}}, 
+  {"PLACE_ON_TABLE_RIGHT",Skill, skills={{"place", side="right", object_id=TABLETOP_NAME_RIGHT}}, 
           final_state="PLACE_GO_INITIAL_RIGHT", 
           failure_state="FAILED"},
   {"PLACE_GO_INITIAL_RIGHT",Skill, skills={{"goinitial",side="right"}}, 
@@ -101,8 +102,8 @@ fsm:add_transitions{
   {"SORT_RIGHT", "CHECK_FOR_HUMAN", "op.right_held_object_belongs_in_human_bin"},
   {"SORT_RIGHT", "CHECK_LEFT_HAND", "op.right_held_object_belongs_in_robot_bin"},
   {"SORT_RIGHT", "PLACE_ON_TABLE_RIGHT", "op.right_held_object_unsortable"},
-  {"CHECK_LEFT_HAND", "SWITCH_HANDS_TO_LEFT", "(not op.HERB_holding_object_in_right_hand)"},
-  {"CHECK_LEFT_HAND", "PLACE_LEFT", "op.HERB_holding_object_in_right_hand"},
+  {"CHECK_LEFT_HAND", "SWITCH_HANDS_TO_LEFT", "(not op.HERB_holding_object_in_left_hand)"},
+  {"CHECK_LEFT_HAND", "PLACE_LEFT", "op.HERB_holding_object_in_left_hand"},
   {"CHECK_FOR_HUMAN", "HANDOFF_TO_HUMAN", "op.human_near_table"},
   {"CHECK_FOR_HUMAN", "PLACE_ON_TABLE_RIGHT", "(not op.human_near_table)"},
 }
