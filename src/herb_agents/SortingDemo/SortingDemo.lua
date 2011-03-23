@@ -59,12 +59,23 @@ fsm:define_states{ export_to=_M,
   {"SORT",SubFSM, subfsm=subFSM_sort.fsm, 
           exit_to="SORT_LOOP", 
           fail_to="SORT_LOOP"},
-  {"INTERUPT",Skill, skills={{"stop_manipapp"}}, 
+  {"INTERUPT_FOR_HANDOFF",Skill, skills={{"stop_manipapp"}}, 
           final_state="TAKE_HANDOFF", 
           failure_state="TAKE_HANDOFF"},
   {"TAKE_HANDOFF",SubFSM, subfsm=subFSM_take_handoff.fsm, 
           exit_to="SORT", 
           fail_to="SORT"},
+  {"INTERUPT_FOR_INACTIVE_ARM",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, my arm died. Can you help me restart it?"}}, 
+          final_state="WAIT_FOR_ARMS", 
+          failure_state="WAIT_FOR_ARMS"},
+  {"WAIT_FOR_ARMS", JumpState},
+  {"ARMS_ACTIVE",Skill, skills={{"say",text="Great! My arms are active. Let's continue!"}}, 
+          final_state="SORT", 
+          failure_state="SORT"},
+  {"INTERUPT_FOR_COLLISION",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, I am in collision and I cannot move. Can you help me? Press the start button when you are finished."}}, 
+          final_state="WAIT_FOR_COLLISION", 
+          failure_state="WAIT_FOR_COLLISION"},
+  {"WAIT_FOR_COLLISION", JumpState},
 }
 
 fsm:add_transitions{
@@ -78,12 +89,29 @@ fsm:add_transitions{
   {"INSTRUCTIONS", "SORT_LOOP", "p.HRI_yes or p.start_button"},
   {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object or p.start_button"},
   {"SORT_LOOP", "FINAL", "(not op.objects_in_play)"},
-  {"SORT_LOOP", "SORT", "op.objects_on_table or op.HERB_holding_object"},
+  {"SORT_LOOP", "SORT", "op.sortable_objects_on_table or op.HERB_holding_object"},
   --{"SORT_LOOP", "RESET", "(not op.human_tracking_working) and (not p.HRI_yes)"},
   --{"SORT_LOOP", "RESET", "(not op.human_near_table) and (not p.HRI_yes)"},
-  {"SORT", "INTERUPT", "op.human_offering_object and false or p.start_button"},
+  {"SORT", "INTERUPT_FOR_INACTIVE_ARM", "op.either_arm_inactive"},
+  {"SORT", "INTERUPT_FOR_COLLISION", "fsm.check_for_collision_errors()"},
+  {"SORT", "INTERUPT_FOR_HANDOFF", "op.human_offering_object or p.start_button"},
+  {"TAKE_HANDOFF", "INTERUPT_FOR_INACTIVE_ARM", "op.either_arm_inactive"},
+  {"TAKE_HANDOFF", "INTERUPT_FOR_COLLISION", "fsm.check_for_collision_errors()"},
+  {"WAIT_FOR_ARMS", "ARMS_ACTIVE", "(not op.either_arm_inactive)"},
+  {"WAIT_FOR_COLLISION", "SORT", "p.start_button"},
 }
 
+function fsm:check_for_collision_errors()
+  if SORT.subfsm.error:find("Collision") then
+    print_warn("Sort Error: " .. SORT.subfsm.error)
+    return true
+  end
+  if TAKE_HANDOFF.subfsm.error:find("Collision") then
+    print_warn("TAKE_HANDOFF Error: " .. TAKE_HANDOFF.subfsm.error)
+    return true
+  end
+  return false
+end
 
 function START:init()
   self.fsm:reset_trace()

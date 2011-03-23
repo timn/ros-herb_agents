@@ -2,7 +2,6 @@
 ------------------------------------------------------------------------
 --  obj_tracking_preds.lua - Object Tracking HERB Predicates
 --
---  Created: Mon Feb 07 12:41:15 2011
 --  License: BSD, cf. LICENSE file
 --  Copyright  2011  Kyle Strabala <strabala@cmu.edu>
 --             2010  Tim Niemueller [www.niemueller.de]
@@ -35,6 +34,8 @@ depends_topics = {
   {v="hand_off_byte", name="/HandOffDetector/human_handoff_status", type="std_msgs/Byte", latching=true},
   { v="grabbed",  name="/manipulation/grabbed_obj", type="newmanipapp/GrabbedObjects", latching=true },
   { v="objects",  name="/manipulation/obj_list",   type="newmanipapp/ObjectActions", latching=true },
+  { v="left_wam_state",  name="/left/owd/wamstate",   type="pr_msgs/WAMState", latching=true },
+  { v="right_wam_state",  name="/right/owd/wamstate",   type="pr_msgs/WAMState", latching=true },
 }
 
 -- Initialize as predicate library
@@ -47,16 +48,17 @@ local WORLD_FRAME_ID = "/openrave"
 local HUMAN_HAND_FRAME_ID_BASE = "human_left_hand"
 local HERB_LEFT_HAND_FRAME_ID = "/left/wam7"
 local HERB_RIGHT_HAND_FRAME_ID = "/right/wam7"
-local TRACKING_TIMEOUT_SECS = 4
+local MESSAGE_TIMEOUT_SECS = 4
 local ROBOT_BIN_OBJECT_PATTERN = "poptarts[%d]*"
 local HUMAN_BIN_OBJECT_PATTERN = "fuze_bottle[%d]*"
+local WAM_STATE_INACTIVE_INT = 255 --pr_msgs/WAMState: state_inactive
 
 function human_tracking_working()
   now_time = roslua.Time.now():to_sec()
   if #skeleton_list.messages > 0 then
     local m = skeleton_list.messages[#skeleton_list.messages]
     msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
-    if now_time - msg_time > TRACKING_TIMEOUT_SECS then
+    if now_time - msg_time > MESSAGE_TIMEOUT_SECS then
       return false
     end
     --print_debug("Tracking " .. tostring(#m.values.skeletons) .. " skeletons at " .. tostring(msg_time) .. ", current time: " .. tostring(now_time))
@@ -79,7 +81,7 @@ function human_near_table()
       if #skeleton_list.messages > 0 then
         local m = skeleton_list.messages[#skeleton_list.messages]
         msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
-        if now_time - msg_time > TRACKING_TIMEOUT_SECS then
+        if now_time - msg_time > MESSAGE_TIMEOUT_SECS then
           return false
         end
         --print_debug("Tracking " .. tostring(#m.values.skeletons) .. " skeletons at " .. tostring(msg_time) .. ", current time: " .. tostring(now_time))
@@ -102,23 +104,53 @@ function human_near_table()
   return false
 end
 
-function objects_on_table()
-  now_time = roslua.Time.now():to_sec()
-  if #obj_list.messages > 0 then
-    local m = obj_list.messages[#obj_list.messages]
-    msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
-    if now_time - msg_time < TRACKING_TIMEOUT_SECS then
-      for i = 1, #m.values.objects do
-        object = m.values.objects[i].values
-        --if object.header.values.frame_id == WORLD_FRAME_ID then
-          --pos = object.pose.values.position.values
-          --if math.abs(pos.z - TABLE_HEIGHT) < 0.05 then
-            return true
-          --end
-        --end
+function sortable_objects_on_table()
+  if #objects.messages > 0 then
+    local m = objects.messages[#objects.messages] -- only check most recent
+    for i,o in pairs(m.values.object_id) do
+      if m.values.poss_act[i] == "grab" then
+        if  o:match(ROBOT_BIN_OBJECT_PATTERN) or o:match(HUMAN_BIN_OBJECT_PATTERN) then
+          return true
+        end
       end
     end
   end
+  return false
+end
+
+function sortable_objects_on_left()
+  if #objects.messages > 0 then
+    local m = objects.messages[#objects.messages] -- only check most recent
+    for i,o in pairs(m.values.object_id) do
+      if m.values.poss_act[i] == "grab" then
+        if  m.values.side[i] == "left" then
+          if o:match(ROBOT_BIN_OBJECT_PATTERN) or o:match(HUMAN_BIN_OBJECT_PATTERN) then
+            return true
+          end
+        end
+      end
+    end
+  end
+  return false
+end
+
+function sortable_objects_on_right()
+  if #objects.messages > 0 then
+    local m = objects.messages[#objects.messages] -- only check most recent
+    for i,o in pairs(m.values.object_id) do
+      if m.values.poss_act[i] == "grab" then
+        if  m.values.side[i] == "right" then
+          if o:match(ROBOT_BIN_OBJECT_PATTERN) or o:match(HUMAN_BIN_OBJECT_PATTERN) then
+            return true
+          end
+        end
+      end
+    end
+  end
+  return false
+end
+
+function objects_on_table()
   if #objects.messages > 0 then
     local m = objects.messages[#objects.messages] -- only check most recent
     for i,o in pairs(m.values.object_id) do
@@ -135,7 +167,7 @@ function human_holding_object()
   if #obj_list.messages > 0 then
     local m = obj_list.messages[#obj_list.messages]
     msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
-    if now_time - msg_time > TRACKING_TIMEOUT_SECS then
+    if now_time - msg_time > MESSAGE_TIMEOUT_SECS then
       return false
     end
     for i = 1, #m.values.objects do
@@ -158,7 +190,7 @@ function human_offering_object()
       if #skeleton_list.messages > 0 then
         local m = skeleton_list.messages[#skeleton_list.messages]
         msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
-        if now_time - msg_time > TRACKING_TIMEOUT_SECS then
+        if now_time - msg_time > MESSAGE_TIMEOUT_SECS then
           return false
         end
         --print_debug("Tracking " .. tostring(#m.values.skeletons) .. " skeletons at " .. tostring(msg_time) .. ", current time: " .. tostring(now_time))
@@ -182,7 +214,7 @@ end
 
 -- Check if HERB has an object
 function HERB_holding_object()
-   --return (HERB_holding_object_in_left_hand or HERB_holding_object_in_left_hand)
+   --return (HERB_holding_object_in_leftWAM_STATE_INACTIVE_INT_hand or HERB_holding_object_in_left_hand)
    --function HERB_holding_object_in_left_hand()
        if #grabbed.messages > 0 then
          local m = grabbed.messages[#grabbed.messages] -- only check most recent
@@ -320,7 +352,7 @@ function objects_in_play()
       if #obj_list.messages > 0 then
         local m = obj_list.messages[#obj_list.messages]
         msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
-        if now_time - msg_time > TRACKING_TIMEOUT_SECS then
+        if now_time - msg_time > MESSAGE_TIMEOUT_SECS then
           --return false
         else
           for i = 1, #m.values.objects do
@@ -366,5 +398,82 @@ function objects_in_play()
        --end
        --return false
   --end
+  return false
+end
+
+--Check if either arm is inactive, ie. state_inactive or old message
+function either_arm_inactive()
+  local wam_state = left_wam_state
+  if #wam_state.messages > 0 then
+    local m = wam_state.messages[#wam_state.messages]
+    local now_time = roslua.Time.now():to_sec()
+    local msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
+    if now_time - msg_time < MESSAGE_TIMEOUT_SECS then
+      if m.values.state ==  WAM_STATE_INACTIVE_INT then
+        return true --state_inactive
+      end
+    else
+      return true --old messages
+    end
+  else
+    return true --no messages
+  end
+
+  local wam_state = right_wam_state
+  if #wam_state.messages > 0 then
+    local m = wam_state.messages[#wam_state.messages]
+    local now_time = roslua.Time.now():to_sec()
+    local msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
+    if now_time - msg_time < MESSAGE_TIMEOUT_SECS then
+      if m.values.state ==  WAM_STATE_INACTIVE_INT then
+        return true --state_inactive
+      end
+    else
+      return true --old messages
+    end
+  else
+    return true --no messages
+  end
+
+  return false
+end
+
+--Check if the left arm is inactive, ie. state_inactive or old message
+function left_arm_inactive()
+  local wam_state = left_wam_state
+  if #wam_state.messages > 0 then
+    local m = wam_state.messages[#wam_state.messages]
+    local now_time = roslua.Time.now():to_sec()
+    local msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
+    if now_time - msg_time < MESSAGE_TIMEOUT_SECS then
+      if m.values.state ==  WAM_STATE_INACTIVE_INT then
+        return true --state_inactive
+      end
+    else
+      return true --old messages
+    end
+  else
+    return true --no messages
+  end
+  return false
+end
+
+--Check if the right arm is inactive, ie. state_inactive or old message
+function right_arm_inactive()
+  local wam_state = right_wam_state
+  if #wam_state.messages > 0 then
+    local m = wam_state.messages[#wam_state.messages]
+    local now_time = roslua.Time.now():to_sec()
+    local msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
+    if now_time - msg_time < MESSAGE_TIMEOUT_SECS then
+      if m.values.state ==  WAM_STATE_INACTIVE_INT then
+        return true --state_inactive
+      end
+    else
+      return true --old messages
+    end
+  else
+    return true --no messages
+  end
   return false
 end

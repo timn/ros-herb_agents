@@ -2,9 +2,9 @@
 ----------------------------------------------------------------------------
 --  init.lua - Herb skills initialization file
 --
---  Created: Fri Aug 20 18:25:22 2010 (at Intel Research, Pittsburgh)
 --  License: BSD, cf. LICENSE file
---  Copyright  2010  Tim Niemueller [www.niemueller.de]
+--  Copyright  2010  Kyle Strabala [strabala@cmu.edu]
+--             2010  Tim Niemueller [www.niemueller.de]
 --             2010  Carnegie Mellon University
 --             2010  Intel Labs Pittsburgh
 ----------------------------------------------------------------------------
@@ -36,15 +36,16 @@ fsm:define_states{ export_to=_M,
   closure={p=preds, op=obj_preds},
   {"START", JumpState},
   {"GO_INITIAL",Skill, skills={{"goinitial_both"}}, 
-          final_state="PICKUP_OBJECT_LEFT", 
+          final_state="PICKUP_OBJECT", 
           failure_state="GO_INITIAL_FAIL"},
-  {"PICKUP_OBJECT_LEFT",Skill, skills={{"grab_object", side="left", object_id="poptarts[%d]*,fuze_bottle[%d]*"}}, 
-          final_state="SORT_LEFT", 
-          failure_state="PICKUP_OBJECT_RIGHT"},
   {"GO_INITIAL_FAIL",Skill, skills={{"say", text="I cannot go to my initial configuration. Please help, then press the start button."}}, 
           final_state="WAIT_FOR_HELP", 
           failure_state="WAIT_FOR_HELP"},
   {"WAIT_FOR_HELP", JumpState},
+  {"PICKUP_OBJECT", JumpState},
+  {"PICKUP_OBJECT_LEFT",Skill, skills={{"grab_object", side="left", object_id="poptarts[%d]*,fuze_bottle[%d]*"}}, 
+          final_state="SORT_LEFT", 
+          failure_state="FAILED"},
   {"PICKUP_OBJECT_RIGHT",Skill, skills={{"grab_object", side="right", object_id="poptarts[%d]*,fuze_bottle[%d]*"}}, 
           final_state="SORT_RIGHT", 
           failure_state="FAILED"},
@@ -97,11 +98,13 @@ fsm:define_states{ export_to=_M,
 }
 
 fsm:add_transitions{
-  {"START", "GO_INITIAL", "op.objects_on_table and (not op.HERB_holding_object)"},
-  {"START", "SORT_LEFT", "op.HERB_holding_object_in_left_hand and (not op.HERB_holding_object_in_right_hand)"},
+  {"START", "GO_INITIAL", "not op.HERB_holding_object"},
   {"START", "SORT_RIGHT", "op.HERB_holding_object_in_right_hand"},
-  {"START", "FINAL", "(not op.objects_on_table) and (not op.HERB_holding_object)"},
+  {"START", "SORT_LEFT", "op.HERB_holding_object_in_left_hand"},
   {"WAIT_FOR_HELP", "GO_INITIAL", "p.start_button"},
+  {"PICKUP_OBJECT", "PICKUP_OBJECT_LEFT", "op.sortable_objects_on_left"},
+  {"PICKUP_OBJECT", "PICKUP_OBJECT_RIGHT", "op.sortable_objects_on_right"},
+  {"PICKUP_OBJECT", "FINAL", "(not op.sortable_objects_on_table)"},
   {"SORT_LEFT", "CHECK_RIGHT_HAND", "op.left_held_object_belongs_in_human_bin"},
   {"SORT_LEFT", "PLACE_INTO_BIN", "op.left_held_object_belongs_in_robot_bin"},
   {"SORT_LEFT", "PLACE_ON_TABLE_LEFT", "op.left_held_object_unsortable"},
