@@ -26,6 +26,8 @@ agentenv.agent_module(...)
 ROBOT_BIN_NAME = "icebin1"
 TABLETOP_NAME_RIGHT = "tabletop1"
 TABLETOP_NAME_LEFT = "tabletop2"
+local ROBOT_BIN_OBJECT_PATTERN = "poptarts[%d]*"
+local HUMAN_BIN_OBJECT_PATTERN = "fuze_bottle[%d]*"
 
 local preds = require("herb_agents.predicates.general")
 local obj_preds = require("herb_agents.predicates.obj_tracking_preds")
@@ -43,10 +45,10 @@ fsm:define_states{ export_to=_M,
           failure_state="WAIT_FOR_HELP"},
   {"WAIT_FOR_HELP", JumpState},
   {"PICKUP_OBJECT", JumpState},
-  {"PICKUP_OBJECT_LEFT",Skill, skills={{"grab_object", side="left", object_id="poptarts[%d]*,fuze_bottle[%d]*"}}, 
+  {"PICKUP_OBJECT_LEFT",Skill, skills={{"grab_object", side="left", object_id=(ROBOT_BIN_OBJECT_PATTERN .. "," .. HUMAN_BIN_OBJECT_PATTERN)}}, 
           final_state="SORT_LEFT", 
           failure_state="FAILED"},
-  {"PICKUP_OBJECT_RIGHT",Skill, skills={{"grab_object", side="right", object_id="poptarts[%d]*,fuze_bottle[%d]*"}}, 
+  {"PICKUP_OBJECT_RIGHT",Skill, skills={{"grab_object", side="right", object_id=(ROBOT_BIN_OBJECT_PATTERN .. "," .. HUMAN_BIN_OBJECT_PATTERN)}}, 
           final_state="SORT_RIGHT", 
           failure_state="FAILED"},
   {"SORT_LEFT", JumpState},

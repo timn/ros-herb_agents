@@ -23,6 +23,7 @@ documentation      = [==[take a handoff offered by a human]==]
 -- Initialize as agent module
 agentenv.agent_module(...)
 
+ROBOT_BIN_NAME = "icebin1"
 TABLETOP_NAME_RIGHT = "tabletop1"
 TABLETOP_NAME_LEFT = "tabletop2"
 
@@ -40,6 +41,9 @@ fsm:define_states{ export_to=_M,
           failure_state="FAILED"},
   {"TAKE_HANDOFF", Skill, skills={{"say", text="I am going to take what you are holding. Be careful."},
                                   {"take_at_tm", side="right", T="[0,1,0,0,0,-1,-1,0,0,0.57,-1.83,1.175]", exec_timelimit=10}}, 
+          final_state="PICKUP_RIGHT", 
+          failure_state="FAILED"},
+  {"PICKUP_RIGHT", Skill, skills={{"pickup", side="right"}}, 
           final_state="CHECK_LEFT_HAND", 
           failure_state="FAILED"},
   {"CHECK_LEFT_HAND", JumpState},
@@ -50,6 +54,9 @@ fsm:define_states{ export_to=_M,
           final_state="GO_INITIAL_RIGHT", 
           failure_state="FAILED"},
   {"GO_INITIAL_RIGHT",Skill, skills={{"goinitial",side="right"}}, 
+          final_state="PLACE_INTO_BIN", 
+          failure_state="FAILED"},
+  {"PLACE_INTO_BIN",Skill, skills={{"put", side="left", object_id=ROBOT_BIN_NAME}}, 
           final_state="FINAL", 
           failure_state="FAILED"},
   {"FINAL", JumpState},
