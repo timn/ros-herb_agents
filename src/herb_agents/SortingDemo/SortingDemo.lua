@@ -118,6 +118,10 @@ fsm:add_transitions{
 }
 
 function fsm:check_for_collision_errors()
+  if fsm.error:find("Collision") then
+    print_warn("FSM Error: " .. SORT.subfsm.error)
+    return true
+  end
   if SORT.subfsm.error:find("Collision") then
     print_warn("Sort Error: " .. SORT.subfsm.error)
     return true
@@ -130,6 +134,7 @@ function fsm:check_for_collision_errors()
 end
 
 function WAIT_FOR_COLLISION:init()
+  fsm.error = ""
   SORT.subfsm.error = ""
   TAKE_HANDOFF.subfsm.error = ""
 end
@@ -166,6 +171,73 @@ function START:init()
   print_debug("%s = %q", "obj_preds.right_held_object_unsortable", tostring(obj_preds.right_held_object_unsortable))
   print_debug("%s = %q", "obj_preds.right_held_object_belongs_in_robot_bin", tostring(obj_preds.right_held_object_belongs_in_robot_bin))
   print_debug("%s = %q", "obj_preds.right_held_object_belongs_in_human_bin", tostring(obj_preds.right_held_object_belongs_in_human_bin))
+  
+  ---print_error("asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf")
+  ---print_table(_M)
+  ---print_table(self)
+  ---print_error("asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf")
+end
+
+function print_table(v0)
+  print_warn("%s table:", tostring(v0))
+  for k1,v1 in pairs(v0) do
+    print_var(k1,v1,"  ")
+    if v1 and type(v1) == "table" and check_parents(v1,v0,1) then
+      for k2,v2 in pairs(v1) do
+        print_var(k2,v2,"      ")
+        if v2 and type(v2) == "table" and check_parents(v2,v0,2) then
+          for k3,v3 in pairs(v2) do
+            print_var(k3,v3,"          ")
+            if v3 and type(v3) == "table" and check_parents(v3,v0,3) then
+              for k4,v4 in pairs(v3) do
+                print_var(k4,v4,"              ")
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+function print_var(k,v,indent)
+  if v then
+    print_info("%s%s: %s (%s)", indent, tostring(k), tostring(v), type(v))
+  else
+    print_info("%s%s: nil", indent, tostring(k))
+  end
+end
+
+function check_parents(v,parent,layer)
+  if v == parent then
+    return false
+  end
+  if layer > 1 then
+    for k1,v1 in pairs(parent) do
+      if v1 and v == v1 then
+        return false
+      end
+      if layer > 2 then
+        if v1 and type(v1) == "table" then
+          for k2,v2 in pairs(v1) do
+            if v2 and v == v2 then
+              return false
+            end
+            if layer > 3 then
+              if v2 and type(v2) == "table" then
+                for k3,v3 in pairs(v2) do
+                  if v3 and v == v3 then
+                    return false
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  return true
 end
 
 function CHECK_FOR_HANDOFF_LOOPS:init()

@@ -14,7 +14,7 @@ module(..., agentenv.module_init)
 
 -- Crucial skill information
 name            = "take_handoff"
-fsm             = AgentHSM:new{name=name, debug=true, start="START", exit_state="FINAL", fail_state="FAILED"}
+fsm             = AgentHSM:new{name=name, debug=true, start="START", exit_state="FINAL", fail_state="FAILED", graph_collapse=false}
 depends_skills  = {}
 depends_actions = {}
 
@@ -37,28 +37,28 @@ fsm:define_states{ export_to=_M,
   {"START", JumpState},
   {"PLACE_RIGHT",Skill, skills={{"say", text="Please wait while I set this on the table."},
                                 {"place", side="right", object_id=TABLETOP_NAME_RIGHT}}, 
-          final_state="TAKE_HANDOFF", 
-          failure_state="FAILED"},
+          final_state="TAKE_HANDOFF",
+          failure_state="FAILED", hide_failure_transition = true},
   {"TAKE_HANDOFF", Skill, skills={{"say", text="I am going to take what you are holding. Be careful."},
                                   {"take_at_tm", side="right", T="[0,1,0,0,0,-1,-1,0,0,0.57,-1.83,1.175]", exec_timelimit=10}}, 
-          final_state="PICKUP_RIGHT", 
-          failure_state="FAILED"},
+          final_state="PICKUP_RIGHT",
+          failure_state="FAILED", hide_failure_transition = true},
   {"PICKUP_RIGHT", Skill, skills={{"pickup", side="right"}}, 
-          final_state="CHECK_LEFT_HAND", 
-          failure_state="FAILED"},
+          final_state="CHECK_LEFT_HAND",
+          failure_state="FAILED", hide_failure_transition = true},
   {"CHECK_LEFT_HAND", JumpState},
   {"PLACE_LEFT",Skill, skills={{"place", side="left", object_id=TABLETOP_NAME_LEFT}}, 
-          final_state="SWITCH_HANDS", 
-          failure_state="FAILED"},
+          final_state="SWITCH_HANDS",
+          failure_state="FAILED", hide_failure_transition = true},
   {"SWITCH_HANDS",Skill, skills={{"handover", side="right"}}, 
-          final_state="GO_INITIAL_RIGHT", 
-          failure_state="FAILED"},
+          final_state="GO_INITIAL_RIGHT",
+          failure_state="FAILED", hide_failure_transition = true},
   {"GO_INITIAL_RIGHT",Skill, skills={{"goinitial",side="right"}}, 
-          final_state="PLACE_INTO_BIN", 
-          failure_state="FAILED"},
+          final_state="PLACE_INTO_BIN",
+          failure_state="FAILED", hide_failure_transition = true},
   {"PLACE_INTO_BIN",Skill, skills={{"put", side="left", object_id=ROBOT_BIN_NAME}}, 
-          final_state="FINAL", 
-          failure_state="FAILED"},
+          final_state="FINAL",
+          failure_state="FAILED", hide_failure_transition = true},
   {"FINAL", JumpState},
   {"FAILED", JumpState},
 }

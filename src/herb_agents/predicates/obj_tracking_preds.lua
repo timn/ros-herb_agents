@@ -404,34 +404,42 @@ end
 --Check if either arm is inactive, ie. state_inactive or old message
 function either_arm_inactive()
   local wam_state = left_wam_state
+  local arm = "Left"
   if #wam_state.messages > 0 then
     local m = wam_state.messages[#wam_state.messages]
     local now_time = roslua.Time.now():to_sec()
     local msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
     if now_time - msg_time < MESSAGE_TIMEOUT_SECS then
       if m.values.state ==  WAM_STATE_INACTIVE_INT then
+        print_debug("%s Arm: inactive state", arm)
         return true --state_inactive
       end
     else
+      print_debug("%s Arm: old message", arm)
       return true --old messages
     end
   else
+    print_debug("%s Arm: no message", arm)
     return true --no messages
   end
 
   local wam_state = right_wam_state
+  local arm = "Right"
   if #wam_state.messages > 0 then
     local m = wam_state.messages[#wam_state.messages]
     local now_time = roslua.Time.now():to_sec()
     local msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
     if now_time - msg_time < MESSAGE_TIMEOUT_SECS then
       if m.values.state ==  WAM_STATE_INACTIVE_INT then
+        print_debug("%s Arm: inactive state", arm)
         return true --state_inactive
       end
     else
+      print_debug("%s Arm: old message", arm)
       return true --old messages
     end
   else
+    print_debug("%s Arm: no message", arm)
     return true --no messages
   end
 
@@ -441,18 +449,22 @@ end
 --Check if the left arm is inactive, ie. state_inactive or old message
 function left_arm_inactive()
   local wam_state = left_wam_state
+  local arm = "Left"
   if #wam_state.messages > 0 then
     local m = wam_state.messages[#wam_state.messages]
     local now_time = roslua.Time.now():to_sec()
     local msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
     if now_time - msg_time < MESSAGE_TIMEOUT_SECS then
       if m.values.state ==  WAM_STATE_INACTIVE_INT then
+        print_debug("%s Arm: inactive state", arm)
         return true --state_inactive
       end
     else
+      print_debug("%s Arm: old message", arm)
       return true --old messages
     end
   else
+    print_debug("%s Arm: no message", arm)
     return true --no messages
   end
   return false
@@ -461,18 +473,22 @@ end
 --Check if the right arm is inactive, ie. state_inactive or old message
 function right_arm_inactive()
   local wam_state = right_wam_state
+  local arm = "Right"
   if #wam_state.messages > 0 then
     local m = wam_state.messages[#wam_state.messages]
     local now_time = roslua.Time.now():to_sec()
     local msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
     if now_time - msg_time < MESSAGE_TIMEOUT_SECS then
       if m.values.state ==  WAM_STATE_INACTIVE_INT then
+        print_debug("%s Arm: inactive state", arm)
         return true --state_inactive
       end
     else
+      print_debug("%s Arm: old message", arm)
       return true --old messages
     end
   else
+    print_debug("%s Arm: no message", arm)
     return true --no messages
   end
   return false
