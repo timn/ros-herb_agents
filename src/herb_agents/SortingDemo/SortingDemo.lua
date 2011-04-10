@@ -24,9 +24,11 @@ documentation      = [==[Sorting Demo.]==]
 agentenv.agent_module(...)
 
 
-TIMEOUT_INDIFFERENCE = 10
-FAILURE_LOOP_MAX_COUNT = 3
-INSTRUCTIONS =  "Instructions. who dat girl." --"Lets collaborate to put these items where they belong. The fuze bottles belong in your bin. I will need you to pass me pop tarts that are out of my reach. Likewise, I will pass you fuze bottles that are near me."
+local TIMEOUT_INDIFFERENCE = 10
+local FAILURE_LOOP_MAX_COUNT = 3
+local EXEC_TIME_LIMIT = 20
+local INSTRUCTIONS =  "Hello. Lets collaborate to put these items where they belong. The fuze bottles belong in your bin. I will need you to pass me pop tarts that are out of my reach. Likewise, I will pass you fuze bottles that are near me."
+local HELP_ME_PHRASE = "I need help."
 
 local preds = require("herb_agents.predicates.general")
 local obj_preds = require("herb_agents.predicates.obj_tracking_preds")
@@ -42,10 +44,10 @@ fsm:define_states{ export_to=_M,
   closure={p=preds, op=obj_preds, TIMEOUT_INDIFFERENCE=TIMEOUT_INDIFFERENCE, FAILURE_LOOP_MAX_COUNT=FAILURE_LOOP_MAX_COUNT},
   {"START", JumpState},
   {"FINAL", JumpState},
-  {"GO_INITIAL",Skill, skills={{"goinitial_both"}}, 
+  {"GO_INITIAL",Skill, skills={{"goinitial_both", exec_timelimit=EXEC_TIME_LIMIT}}, 
           final_state="RESET", 
           failure_state="GO_INITIAL_FAIL"},
-  {"GO_INITIAL_FAIL",Skill, skills={{"say", text="I cannot go to my initial configuration. Please help, then press the start button."}}, 
+  {"GO_INITIAL_FAIL",Skill, skills={{"say", text="I cannot go to my initial configuration." .. " " .. HELP_ME_PHRASE}}, 
           final_state="WAIT_FOR_HELP", 
           failure_state="WAIT_FOR_HELP"},
   {"WAIT_FOR_HELP", JumpState},
@@ -66,17 +68,17 @@ fsm:define_states{ export_to=_M,
   {"TAKE_HANDOFF",SubFSM, subfsm=subFSM_take_handoff.fsm, 
           exit_to="RESET_HANDOFF_LOOP_COUNT", 
           fail_to="CHECK_FOR_HANDOFF_LOOPS"},
-  {"INTERUPT_FOR_INACTIVE_ARM",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, my arm died. Can you help me restart it?"}}, 
+  {"INTERUPT_FOR_INACTIVE_ARM",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, my arm died." .. " " .. HELP_ME_PHRASE}}, 
           final_state="WAIT_FOR_ARMS", 
           failure_state="WAIT_FOR_ARMS"},
   {"WAIT_FOR_ARMS", JumpState},
   {"ARMS_ACTIVE",Skill, skills={{"say",text="Great! My arms are active. Let's continue!"}}, 
           final_state="SORT", 
           failure_state="SORT"},
-  {"INTERUPT_FOR_COLLISION",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, I am in collision and I cannot move. Can you help me? Press the start button when you are finished."}}, 
+  {"INTERUPT_FOR_COLLISION",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, I am in collision and I cannot move." .. " " .. HELP_ME_PHRASE}}, 
           final_state="WAIT_FOR_COLLISION", 
           failure_state="WAIT_FOR_COLLISION"},
-  {"LOOP_ERROR",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, I am trying to do the same thing over and over, but it is not working. Can you help me? Press the start button when you are finished."}}, 
+  {"LOOP_ERROR",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, I am trying to do the same thing over and over." .. " " .. HELP_ME_PHRASE}}, 
           final_state="WAIT_FOR_LOOP_ERROR", 
           failure_state="WAIT_FOR_LOOP_ERROR"},
   {"WAIT_FOR_COLLISION", JumpState},
@@ -95,8 +97,8 @@ fsm:add_transitions{
   {"RESET", "WAIT_FOR_HUMAN", timeout=20},
   {"RESET", "INSTRUCTIONS", "op.human_near_table"},
   {"RESET", "SORT_LOOP", "p.HRI_yes"},
-  {"INSTRUCTIONS", "SORT_LOOP", "p.HRI_yes or p.start_button"},
-  {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object or p.start_button"},
+  --{"INSTRUCTIONS", "SORT_LOOP", "p.HRI_yes or p.start_button"},
+  {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},
   {"SORT_LOOP", "FINAL", "(not op.objects_in_play)"},
   {"SORT_LOOP", "SORT", "op.sortable_objects_on_table or op.HERB_holding_object"},
   --{"SORT_LOOP", "RESET", "(not op.human_tracking_working) and (not p.HRI_yes)"},
@@ -145,6 +147,21 @@ function fsm:check_for_robot_handoff()
       return true
     end
     if SORT.subfsm.current.name == "HANDOFF_TO_HUMAN_GIVE" then
+      return true
+    end
+    if SORT.subfsm.current.name == "HANDOFF_GO_INITIAL_RIGHT" then
+      return true
+    end
+    if SORT.subfsm.current.name == "PLACE_ON_TABLE_RIGHT" then
+      return true
+    end
+    if SORT.subfsm.current.name == "PLACE_GO_INITIAL_RIGHT" then
+      return true
+    end
+    if SORT.subfsm.current.name == "FINAL" then
+      return true
+    end
+    if SORT.subfsm.current.name == "FAILED" then
       return true
     end
   end

@@ -30,8 +30,8 @@ depends_topics = {
   {v="callbutton", name="/callbutton", type="std_msgs/Byte"},
   {v="obj_list", name="/objtracking/objlist", type="objtracking/ObjectList", latching=true},
   {v="skeleton_list", name="/skeletons", type="body_msgs/Skeletons", latching=true},
-  {v="human_near_table_byte", name="/human_near_table_status", type="std_msgs/Byte", latching=true},
-  {v="hand_off_byte", name="/human_handoff_status", type="std_msgs/Byte", latching=true},
+  {v="human_near_table_byte", name="/HandOffDetector/human_near_table_status", type="std_msgs/Byte", latching=true},
+  {v="hand_off_byte", name="/HandOffDetector/human_handoff_status", type="std_msgs/Byte", latching=true},
   { v="grabbed",  name="/manipulation/grabbed_obj", type="newmanipapp/GrabbedObjects", latching=true },
   { v="objects",  name="/manipulation/obj_list",   type="newmanipapp/ObjectActions", latching=true },
   { v="left_wam_state",  name="/left/owd/wamstate",   type="pr_msgs/WAMState", latching=true },
@@ -141,6 +141,70 @@ function sortable_objects_on_right()
       if m.values.poss_act[i] == "grab" then
         if  m.values.side[i] == "right" then
           if o:match(ROBOT_BIN_OBJECT_PATTERN) or o:match(HUMAN_BIN_OBJECT_PATTERN) then
+            return true
+          end
+        end
+      end
+    end
+  end
+  return false
+end
+
+function robot_bin_objects_on_left()
+  if #objects.messages > 0 then
+    local m = objects.messages[#objects.messages] -- only check most recent
+    for i,o in pairs(m.values.object_id) do
+      if m.values.poss_act[i] == "grab" then
+        if  m.values.side[i] == "left" then
+          if o:match(ROBOT_BIN_OBJECT_PATTERN) then
+            return true
+          end
+        end
+      end
+    end
+  end
+  return false
+end
+
+function robot_bin_objects_on_right()
+  if #objects.messages > 0 then
+    local m = objects.messages[#objects.messages] -- only check most recent
+    for i,o in pairs(m.values.object_id) do
+      if m.values.poss_act[i] == "grab" then
+        if  m.values.side[i] == "right" then
+          if o:match(ROBOT_BIN_OBJECT_PATTERN) then
+            return true
+          end
+        end
+      end
+    end
+  end
+  return false
+end
+
+function human_bin_objects_on_left()
+  if #objects.messages > 0 then
+    local m = objects.messages[#objects.messages] -- only check most recent
+    for i,o in pairs(m.values.object_id) do
+      if m.values.poss_act[i] == "grab" then
+        if  m.values.side[i] == "left" then
+          if o:match(HUMAN_BIN_OBJECT_PATTERN) then
+            return true
+          end
+        end
+      end
+    end
+  end
+  return false
+end
+
+function human_bin_objects_on_right()
+  if #objects.messages > 0 then
+    local m = objects.messages[#objects.messages] -- only check most recent
+    for i,o in pairs(m.values.object_id) do
+      if m.values.poss_act[i] == "grab" then
+        if  m.values.side[i] == "right" then
+          if o:match(HUMAN_BIN_OBJECT_PATTERN) then
             return true
           end
         end
