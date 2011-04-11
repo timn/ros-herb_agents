@@ -109,7 +109,7 @@ function sortable_objects_on_table()
     local m = objects.messages[#objects.messages] -- only check most recent
     for i,o in pairs(m.values.object_id) do
       if m.values.poss_act[i] == "grab" then
-        if  o:match(ROBOT_BIN_OBJECT_PATTERN) or o:match(HUMAN_BIN_OBJECT_PATTERN) then
+        if o:match(ROBOT_BIN_OBJECT_PATTERN) or o:match(HUMAN_BIN_OBJECT_PATTERN) then
           return true
         end
       end
@@ -123,7 +123,7 @@ function sortable_objects_on_left()
     local m = objects.messages[#objects.messages] -- only check most recent
     for i,o in pairs(m.values.object_id) do
       if m.values.poss_act[i] == "grab" then
-        if  m.values.side[i] == "left" then
+        if m.values.side[i] == "left" then
           if o:match(ROBOT_BIN_OBJECT_PATTERN) or o:match(HUMAN_BIN_OBJECT_PATTERN) then
             return true
           end
@@ -139,7 +139,7 @@ function sortable_objects_on_right()
     local m = objects.messages[#objects.messages] -- only check most recent
     for i,o in pairs(m.values.object_id) do
       if m.values.poss_act[i] == "grab" then
-        if  m.values.side[i] == "right" then
+        if m.values.side[i] == "right" then
           if o:match(ROBOT_BIN_OBJECT_PATTERN) or o:match(HUMAN_BIN_OBJECT_PATTERN) then
             return true
           end
