@@ -60,14 +60,14 @@ fsm:define_states{ export_to=_M,
           failure_state="SORT_LOOP"},
   {"SORT_LOOP",JumpState},
   {"SORT",SubFSM, subfsm=subFSM_sort.fsm, 
-          exit_to="RESET_SORT_LOOP_COUNT", 
-          fail_to="CHECK_FOR_SORT_LOOPS"},
+          exit_to="SORT_LOOP", 
+          fail_to="SORT_LOOP"},
   {"INTERUPT_FOR_HANDOFF",Skill, skills={{"stop_manipapp"}}, 
           final_state="TAKE_HANDOFF", 
           failure_state="TAKE_HANDOFF"},
   {"TAKE_HANDOFF",SubFSM, subfsm=subFSM_take_handoff.fsm, 
-          exit_to="RESET_HANDOFF_LOOP_COUNT", 
-          fail_to="CHECK_FOR_HANDOFF_LOOPS"},
+          exit_to="SORT_LOOP", 
+          fail_to="SORT_LOOP"},
   {"INTERUPT_FOR_INACTIVE_ARM",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, my arm died." .. " " .. HELP_ME_PHRASE}}, 
           final_state="WAIT_FOR_ARMS", 
           failure_state="WAIT_FOR_ARMS"},
@@ -78,45 +78,42 @@ fsm:define_states{ export_to=_M,
   {"INTERUPT_FOR_COLLISION",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, I am in collision and I cannot move." .. " " .. HELP_ME_PHRASE}}, 
           final_state="WAIT_FOR_COLLISION", 
           failure_state="WAIT_FOR_COLLISION"},
-  {"LOOP_ERROR",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, I am trying to do the same thing over and over." .. " " .. HELP_ME_PHRASE}}, 
-          final_state="WAIT_FOR_LOOP_ERROR", 
-          failure_state="WAIT_FOR_LOOP_ERROR"},
   {"WAIT_FOR_COLLISION", JumpState},
-  {"CHECK_FOR_SORT_LOOPS", JumpState},
-  {"RESET_SORT_LOOP_COUNT", JumpState},
-  {"CHECK_FOR_HANDOFF_LOOPS", JumpState},
-  {"RESET_HANDOFF_LOOP_COUNT", JumpState},
-  {"WAIT_FOR_LOOP_ERROR", JumpState},
+  {"INTERUPT_FOR_HUMAN",Skill, skills={{"stop_manipapp"}}, 
+          final_state="WAIT_FOR_START", 
+          failure_state="WAIT_FOR_START"},
+  {"INTERUPT_FOR_LOOP_ERROR",Skill, skills={{"stop_manipapp"},{"say",text="Oh no, I am trying to do the same thing over and over." .. " " .. HELP_ME_PHRASE}}, 
+          final_state="WAIT_FOR_START", 
+          failure_state="WAIT_FOR_START"},
+  {"WAIT_FOR_START", JumpState},
 }
 
 fsm:add_transitions{
-  {"START", "START", timeout=1},
+  {"START", "START", timeout=1, hide=true},
   {"START", "GO_INITIAL", "p.start_button"},
   {"WAIT_FOR_HELP", "GO_INITIAL", "p.start_button"},
-  {"FINAL", "GO_INITIAL", "p.start_button"},
+  {"FINAL", "GO_INITIAL", "p.start_button", hide=true},
   {"RESET", "WAIT_FOR_HUMAN", timeout=20},
   {"RESET", "INSTRUCTIONS", "op.human_near_table"},
   {"RESET", "SORT_LOOP", "p.HRI_yes"},
   --{"INSTRUCTIONS", "SORT_LOOP", "p.HRI_yes or p.start_button"},
   {"SORT_LOOP", "TAKE_HANDOFF", "op.human_offering_object"},
-  {"SORT_LOOP", "FINAL", "(not op.objects_in_play)"},
+  {"SORT_LOOP", "FINAL", "(not op.objects_in_play)", hide=true},
   {"SORT_LOOP", "SORT", "op.sortable_objects_on_table or op.HERB_holding_object"},
   --{"SORT_LOOP", "RESET", "(not op.human_tracking_working) and (not p.HRI_yes)"},
   --{"SORT_LOOP", "RESET", "(not op.human_near_table) and (not p.HRI_yes)"},
-  {"SORT", "INTERUPT_FOR_INACTIVE_ARM", "op.either_arm_inactive"},
-  {"SORT", "INTERUPT_FOR_COLLISION", "fsm.check_for_collision_errors()"},
-  {"SORT", "INTERUPT_FOR_HANDOFF", "(op.human_offering_object and (not fsm.check_for_robot_handoff())) or p.start_button"},
-  {"TAKE_HANDOFF", "INTERUPT_FOR_INACTIVE_ARM", "op.either_arm_inactive"},
-  {"TAKE_HANDOFF", "INTERUPT_FOR_COLLISION", "fsm.check_for_collision_errors()"},
+  {"SORT", "INTERUPT_FOR_HUMAN", "p.stop_button", hide=true},
+  {"SORT", "INTERUPT_FOR_INACTIVE_ARM", "op.either_arm_inactive", hide=true},
+  {"SORT", "INTERUPT_FOR_COLLISION", "fsm.check_for_collision_errors()", hide=true},
+  {"SORT", "INTERUPT_FOR_HANDOFF", "op.human_offering_object and (not fsm.check_for_robot_handoff())", hide=true},
+  {"SORT", "INTERUPT_FOR_LOOP_ERROR", "fsm.states.SORT.subfsm.states.FINAL.closure.fail_count >= FAILURE_LOOP_MAX_COUNT"},
+  {"TAKE_HANDOFF", "INTERUPT_FOR_HUMAN", "p.stop_button", hide=true},
+  {"TAKE_HANDOFF", "INTERUPT_FOR_INACTIVE_ARM", "op.either_arm_inactive", hide=true},
+  {"TAKE_HANDOFF", "INTERUPT_FOR_COLLISION", "fsm.check_for_collision_errors()", hide=true},
+  {"TAKE_HANDOFF", "INTERUPT_FOR_LOOP_ERROR", "fsm.states.TAKE_HANDOFF.subfsm.states.FINAL.closure.fail_count >= FAILURE_LOOP_MAX_COUNT"},
   {"WAIT_FOR_ARMS", "ARMS_ACTIVE", "(not op.either_arm_inactive)"},
   {"WAIT_FOR_COLLISION", "SORT", "p.start_button"},
-  {"CHECK_FOR_SORT_LOOPS", "SORT_LOOP", "vars.sort_loop_count < FAILURE_LOOP_MAX_COUNT"},
-  {"CHECK_FOR_SORT_LOOPS", "LOOP_ERROR", "vars.sort_loop_count >= FAILURE_LOOP_MAX_COUNT"},
-  {"RESET_SORT_LOOP_COUNT", "SORT_LOOP", "true"},
-  {"CHECK_FOR_HANDOFF_LOOPS", "SORT", "vars.handoff_loop_count < FAILURE_LOOP_MAX_COUNT"},
-  {"CHECK_FOR_HANDOFF_LOOPS", "LOOP_ERROR", "vars.handoff_loop_count >= FAILURE_LOOP_MAX_COUNT"},
-  {"RESET_HANDOFF_LOOP_COUNT", "SORT", "true"},
-  {"WAIT_FOR_LOOP_ERROR", "SORT", "p.start_button"},
+  {"WAIT_FOR_START", "SORT", "p.start_button"},
 }
 
 function fsm:check_for_collision_errors()
@@ -169,8 +166,8 @@ function fsm:check_for_robot_handoff()
 end
 
 function START:init()
-  self.fsm.vars.sort_loop_count = 0
-  self.fsm.vars.handoff_loop_count = 0
+  SORT.subfsm.states.FINAL.closure.fail_count = 0
+  TAKE_HANDOFF.subfsm.states.FINAL.closure.fail_count = 0
   
   self.fsm:reset_trace()
   print_debug("*************************************")
@@ -257,23 +254,9 @@ function check_parents(v,parent,layer)
   return true
 end
 
-function CHECK_FOR_HANDOFF_LOOPS:init()
-  self.fsm.vars.handoff_loop_count = self.fsm.vars.handoff_loop_count + 1
+function WAIT_FOR_START:init()
+  SORT.subfsm.states.FINAL.closure.fail_count = 0
+  TAKE_HANDOFF.subfsm.states.FINAL.closure.fail_count = 0
 end
 
-function RESET_HANDOFF_LOOP_COUNT:init()
-  self.fsm.vars.handoff_loop_count = 0
-end
 
-function CHECK_FOR_SORT_LOOPS:init()
-  self.fsm.vars.sort_loop_count = self.fsm.vars.sort_loop_count + 1
-end
-
-function RESET_SORT_LOOP_COUNT:init()
-  self.fsm.vars.sort_loop_count = 0
-end
-
-function WAIT_FOR_LOOP_ERROR:init()
-  self.fsm.vars.handoff_loop_count = 0
-  self.fsm.vars.sort_loop_count = 0
-end

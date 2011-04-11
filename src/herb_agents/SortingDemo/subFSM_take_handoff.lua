@@ -34,7 +34,7 @@ local Skill = AgentSkillExecJumpState
 
 -- Setup FSM
 fsm:define_states{ export_to=_M,
-  closure={p=preds, op=obj_preds},
+  closure={p=preds, op=obj_preds, fail_count=0},
   {"START", JumpState},
   {"PLACE_RIGHT",Skill, skills={{"say", text="Please wait while I set this on the table."},
                                 {"place", side="right", object_id=TABLETOP_NAME_RIGHT}}, 
@@ -83,3 +83,13 @@ fsm:add_transitions{
   {"SORT_LEFT", "SORT_PLACE_INTO_BIN", "op.left_held_object_belongs_in_robot_bin"},
 }
 
+
+function FINAL:init()
+  self.fsm.current.closure.fail_count = 0
+  print_debug("%s:FINAL:init(): reset fail_count to %d", self.fsm.name, self.fsm.current.closure.fail_count)
+end
+
+function FAILED:init()
+  self.fsm.current.closure.fail_count = self.fsm.current.closure.fail_count + 1
+  print_debug("%s:FAILED:init(): increment fail_count to %d", self.fsm.name, self.fsm.current.closure.fail_count)
+end

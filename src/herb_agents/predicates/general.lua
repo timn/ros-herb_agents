@@ -36,15 +36,26 @@ predlib.setup(...)
 
 local HRI_NO_NUM = 1
 local HRI_YES_NUM = 2
-local DOORBELL_START_NUM = 4
+local STOP_NUM = 3
+local START_NUM = 4
 
 function start_button()
    if #callbutton.messages > 0 then
       local m = callbutton.messages[#callbutton.messages]
       --print_debug("%s: %d messages; most recent: data = %d","start_button",#callbutton.messages,m.values.data)
-      return m.values.data == DOORBELL_START_NUM
+      return m.values.data == START_NUM
    end
    --print_debug("%s: no messages","start_button")
+   return false
+end
+
+function stop_button()
+   if #callbutton.messages > 0 then
+      local m = callbutton.messages[#callbutton.messages]
+      --print_debug("%s: %d messages; most recent: data = %d","stop_button",#callbutton.messages,m.values.data)
+      return m.values.data == STOP_NUM
+   end
+   --print_debug("%s: no messages","stop_button")
    return false
 end
 

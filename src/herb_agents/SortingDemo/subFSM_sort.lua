@@ -39,7 +39,7 @@ local Skill = AgentSkillExecJumpState
 
 -- Setup FSM
 fsm:define_states{ export_to=_M,
-  closure={p=preds, op=obj_preds},
+  closure={p=preds, op=obj_preds, fail_count=0},
   {"START", JumpState},
   {"GO_INITIAL",Skill, skills={{"goinitial_both", exec_timelimit=EXEC_TIME_LIMIT}}, 
           final_state="PICKUP_OBJECT", 
@@ -116,8 +116,8 @@ fsm:add_transitions{
   {"WAIT_FOR_HELP", "GO_INITIAL", "p.start_button"},
   {"PICKUP_OBJECT", "PICKUP_OBJECT_LEFT", "vars.pickup_left"}, --"op.sortable_objects_on_left"
   {"PICKUP_OBJECT", "PICKUP_OBJECT_RIGHT", "vars.pickup_right"}, --"op.sortable_objects_on_right"
-  {"PICKUP_OBJECT", "FAILED", "not (vars.pickup_left or vars.pickup_right)"},
-  {"PICKUP_OBJECT", "FINAL", "(not op.sortable_objects_on_table)"},
+  {"PICKUP_OBJECT", "FAILED", "not (vars.pickup_left or vars.pickup_right)", hide=true},
+  {"PICKUP_OBJECT", "FINAL", "(not op.sortable_objects_on_table)", hide=true},
   {"SORT_LEFT", "CHECK_RIGHT_HAND", "op.left_held_object_belongs_in_human_bin"},
   {"SORT_LEFT", "PLACE_INTO_BIN", "op.left_held_object_belongs_in_robot_bin"},
   {"SORT_LEFT", "PLACE_ON_TABLE_LEFT", "op.left_held_object_unsortable"},
@@ -212,3 +212,12 @@ function PICKUP_OBJECT:init()
   end
 end
 
+function FINAL:init()
+  self.closure.fail_count = 0
+  print_debug("%s:FINAL:init(): reset fail_count to %d", self.fsm.name, self.closure.fail_count)
+end
+
+function FAILED:init()
+  self.closure.fail_count = self.closure.fail_count + 1
+  print_debug("%s:FAILED:init(): increment fail_count to %d", self.fsm.name, self.closure.fail_count)
+end
