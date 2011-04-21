@@ -157,7 +157,7 @@ function check_objects(index)
     return obj_preds.human_bin_objects_on_left
   end
   if index == 3 then
-    return (obj_preds.human_bin_objects_on_right and obj_preds.human_near_table)
+    return (obj_preds.human_bin_objects_on_right)-- and obj_preds.human_near_table)
   end
   return false
 end
@@ -181,10 +181,10 @@ function PICKUP_OBJECT:init()
   -- object_oscillator: 0=left/pop, 1=right/pop, 2=left/fuze, 3=right/fuze
   object_oscillator = (object_oscillator + 1) % 4
   print_debug("PICKUP_OBJECT:init(): increment object_oscillator to %d", object_oscillator)
-  if object_oscillator == 3 and (not obj_preds.human_near_table) then
-    print_debug("PICKUP_OBJECT:init(): loop object_oscillator to 0")
-    object_oscillator = 0 --object_oscillator + 1
-  end
+  --if object_oscillator == 3 and (not obj_preds.human_near_table) then
+  --  print_debug("PICKUP_OBJECT:init(): loop object_oscillator to 0")
+  --  object_oscillator = 0 --object_oscillator + 1
+  --end
 
   object_oscillator = get_oscillator(object_oscillator)
   print_debug("PICKUP_OBJECT:init(): get_oscillator(object_oscillator) = %d", object_oscillator)
