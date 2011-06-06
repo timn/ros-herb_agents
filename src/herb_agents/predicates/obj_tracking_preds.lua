@@ -31,7 +31,7 @@ depends_topics = {
   {v="obj_list", name="/objtracking/objlist", type="objtracking/ObjectList", latching=true},
   {v="skeleton_list", name="/skeletons", type="body_msgs/Skeletons", latching=true},
   {v="human_near_table_byte", name="/HandOffDetector/human_near_table_status", type="std_msgs/Byte", latching=true},
-  {v="hand_off_byte", name="/HandOffDetector/human_handoff_status", type="std_msgs/Byte", latching=true},
+  {v="hand_off_msg", name="/HandOffDetector/handoff_msg", type="pr_msgs/HandOff", latching=true},
   { v="grabbed",  name="/manipulation/grabbed_obj", type="newmanipapp/GrabbedObjects", latching=true },
   { v="objects",  name="/manipulation/obj_list",   type="newmanipapp/ObjectActions", latching=true },
   { v="left_wam_state",  name="/left/owd/wamstate",   type="pr_msgs/WAMState", latching=true },
@@ -42,7 +42,7 @@ depends_topics = {
 predlib.setup(...)
 
 local TABLE_HEIGHT = 0.725
-local HANDOFF_YES_BYTE = 1
+local HANDOFF_YES_INT = 1
 local HUMAN_NEAR_TABLE_YES_BYTE = 1
 local WORLD_FRAME_ID = "/openrave"
 local HUMAN_HAND_FRAME_ID_BASE = "human_left_hand"
@@ -267,9 +267,9 @@ function human_offering_object()
         return false
       end
   --end
-  if #hand_off_byte.messages > 0 then
-    local m = hand_off_byte.messages[#hand_off_byte.messages]
-    if m.values.data == HANDOFF_YES_BYTE then
+  if #hand_off_msg.messages > 0 then
+    local m = hand_off_msg.messages[#hand_off_msg.messages]
+    if m.values.status == HANDOFF_YES_INT then
       return true
     end
   end
