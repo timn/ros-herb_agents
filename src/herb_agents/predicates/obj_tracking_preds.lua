@@ -32,8 +32,8 @@ depends_topics = {
   {v="skeleton_list", name="/skeletons", type="body_msgs/Skeletons", latching=true},
   {v="human_near_table_byte", name="/HandoffDetector/human_near_table_status", type="std_msgs/Byte", latching=true},
   {v="hand_off_msg", name="/HandoffDetector/handoff_msg", type="pr_msgs/HandOff", latching=true},
-  { v="grabbed",  name="/manipulation/grabbed_obj", type="newmanipapp/GrabbedObjects", latching=true },
-  { v="objects",  name="/manipulation/obj_list",   type="newmanipapp/ObjectActions", latching=true },
+  { v="grabbed",  name="/manipulation/grabbed_obj", type="manipapp_msgs/GrabbedObjects", latching=true },
+  { v="objects",  name="/manipulation/obj_list",   type="manipapp_msgs/ObjectActions", latching=true },
   { v="left_wam_state",  name="/left/owd/wamstate",   type="pr_msgs/WAMState", latching=true },
   { v="right_wam_state",  name="/right/owd/wamstate",   type="pr_msgs/WAMState", latching=true },
 }
@@ -76,25 +76,6 @@ function human_near_table()
   --if human_tracking_working == false then
   --  return false
   --end
-  --function human_tracking_working()
-      now_time = roslua.Time.now():to_sec()
-      if #skeleton_list.messages > 0 then
-        local m = skeleton_list.messages[#skeleton_list.messages]
-        msg_time = roslua.Time.from_message_array(m.values.header.values.stamp):to_sec()
-        if now_time - msg_time > MESSAGE_TIMEOUT_SECS then
-          return false
-        end
-        --print_debug("Tracking " .. tostring(#m.values.skeletons) .. " skeletons at " .. tostring(msg_time) .. ", current time: " .. tostring(now_time))
-        if #m.values.skeletons == 0 then
-          return false
-        --else
-          --return true
-        end
-      else
-        return false
-      end
-  --end
-  
   if #human_near_table_byte.messages > 0 then
     local m = human_near_table_byte.messages[#human_near_table_byte.messages]
     if m.values.data == HUMAN_NEAR_TABLE_YES_BYTE then
